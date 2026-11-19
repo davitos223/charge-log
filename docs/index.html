@@ -72,6 +72,22 @@ button{font:inherit;color:inherit}
 .icon-btn:hover{background:var(--surface-2)}
 .icon-btn svg{width:20px;height:20px}
 
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 10px;white-space:nowrap}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync[data-s="synced"] i{background:var(--charge)}
+.sync[data-s="pending"] i{background:var(--fast)}
+.sync[data-s="offline"] i{background:var(--muted)}
+.sync[data-s="error"] i{background:var(--danger)}
+@media (max-width:420px){.sync span{display:none}.sync{padding:8px}}
+.gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;overflow:auto;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.gate form{width:100%;max-width:400px;background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:26px 22px;display:flex;flex-direction:column;gap:14px}
+.gate .mark{width:52px;height:52px;border-radius:15px}
+.gate h2{font-size:22px;font-weight:600}
+.gate p{margin:0;color:var(--muted)}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:500;cursor:pointer;align-self:flex-start}
+.acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.acct span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:14px}
 .note{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:14px}
 
 /* stats */
@@ -206,6 +222,7 @@ button{font:inherit;color:inherit}
       <h1>Charge Log</h1>
       <p id="subline">Every charge, what it cost and how far it got you.</p>
     </div>
+    <span class="sync" id="sync" hidden><i></i><span id="syncTxt"></span></span>
     <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
     </button>
@@ -300,13 +317,16 @@ button{font:inherit;color:inherit}
     </div>
     <label class="fld"><span>Home electricity price</span><div class="unit"><input type="text" inputmode="decimal" id="s-home" autocomplete="off" placeholder="0.25"><em class="u-curkwh">/kWh</em></div></label>
     <p class="hint">With a home price set, home charges work out their own cost from the kWh, so you can leave the cost empty.</p>
+    <div class="fld" id="acctBox" hidden><span>Sync account</span>
+      <div class="acct"><span id="acctEmail"></span><button type="button" class="btn ghost" id="signOutBtn">Sign out</button></div>
+    </div>
     <div class="fld"><span>Backup</span>
       <div class="sheet-actions">
         <button type="button" class="btn ghost" id="exportBtn">Save backup file</button>
         <button type="button" class="btn ghost" id="importBtn">Load backup file</button>
         <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div>
-      <p class="hint">Charges are saved on this device. Save a backup now and then, and use it to copy charges to another device.</p>
+      <p class="hint" id="backupHint">Charges are saved on this device. Save a backup now and then, and use it to copy charges to another device.</p>
     </div>
     <div class="sheet-actions"><span class="spacer"></span>
       <button type="button" class="btn ghost" data-close>Cancel</button>
@@ -315,7 +335,22 @@ button{font:inherit;color:inherit}
   </form>
 </div>
 
+<!-- Sign-in (only when sync is configured) -->
+<div class="gate" id="gate" hidden>
+  <form id="signInForm" novalidate aria-labelledby="gateTitle">
+    <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="#3FCB82"/></svg></div>
+    <h2 id="gateTitle">Sign in to Charge Log</h2>
+    <p>Use the same account on your phone and PC and they share one charge list.</p>
+    <label class="fld"><span>Email</span><input type="email" id="g-email" autocomplete="username" inputmode="email" required></label>
+    <label class="fld"><span>Password</span><input type="password" id="g-pw" autocomplete="current-password" required></label>
+    <p class="err" id="gateErr" hidden></p>
+    <button type="submit" class="btn primary" id="gateBtn">Sign in</button>
+    <button type="button" class="linkbtn" id="forgotBtn">Forgot password?</button>
+  </form>
+</div>
+
 <div class="toast" id="toast" role="status" hidden></div>
+<script src="config.js"></script>
 
 <script>
 (() => {
@@ -590,26 +625,31 @@ $("#chargeForm").addEventListener("submit", async e => {
   const data = { date, type, kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
     odo, socStart: s0, socEnd: s1, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   if (data.cost == null && type === "home" && isNum(settings.homePrice)) data.cost = Math.round(kwh * settings.homePrice * 100) / 100;
-  const btn = $("#saveBtn"); btn.disabled = true; btn.textContent = "Saving…";
-  try {
-    if (editingId) { const old = charges.find(c => c.id === editingId) || {}; await db.collection("charges").doc(editingId).set({ ...data, createdAt: old.createdAt || Date.now() }); }
-    else await db.collection("charges").add({ ...data, createdAt: Date.now() });
-    closeSheet("#chargeScrim"); toast(editingId ? "Charge updated" : "Charge saved");
-  } catch (x) {
-    btn.disabled = false; btn.textContent = editingId ? "Save changes" : "Save charge";
-    if (x && x.code === "invalid_argument") { canWrite = false; applyWrite(); err("This account can view the log but not add to it. Ask the owner to share it with you as an Editor."); }
-    else if (x && x.code === "quota_exceeded") err("The log is full. Delete some old charges and try again.");
-    else err("Couldn't save just now. Check your connection and press Save again.");
-  }
+  // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
+  const wasEdit = !!editingId;
+  run(() => wasEdit
+    ? db.collection("charges").doc(editingId).set({ ...data, createdAt: (charges.find(c => c.id === editingId) || {}).createdAt || Date.now() })
+    : db.collection("charges").add({ ...data, createdAt: Date.now() }), "That charge didn't save");
+  closeSheet("#chargeScrim"); toast(wasEdit ? "Charge updated" : "Charge saved");
 });
+
+function run(fn, failMsg) {
+  let p; try { p = Promise.resolve(fn()); } catch (x) { p = Promise.reject(x); }
+  p.catch(x => {
+    console.error(x);
+    toast(x && x.code === "quota_exceeded" ? "This device's storage is full. Save a backup and delete old charges."
+      : x && x.code === "permission-denied" ? failMsg + ": you're not signed in to the right account."
+      : failMsg + ". Check the connection and try again.");
+  });
+  return p;
+}
 
 $("#delBtn").addEventListener("click", async () => {
   const b = $("#delBtn");
   if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "Tap again to delete"; return; }
-  b.disabled = true;
-  try { await db.collection("charges").doc(editingId).delete(); closeSheet("#chargeScrim"); toast("Charge deleted"); }
-  catch { $("#formErr").textContent = "Couldn't delete it just now. Try again."; $("#formErr").hidden = false; }
-  b.disabled = false;
+  const id = editingId;
+  run(() => db.collection("charges").doc(id).delete(), "That charge wasn't deleted");
+  closeSheet("#chargeScrim"); toast("Charge deleted");
 });
 
 /* ---------- settings ---------- */
@@ -623,8 +663,9 @@ $("#setForm").addEventListener("submit", async e => {
   const hp = parseDec($("#s-home").value);
   if (Number.isNaN(hp)) { toast("Home price should be a number, for example 0.25"); return; }
   const next = { currency: $("#s-cur").value, unit: $("#s-unit").value, homePrice: isNum(hp) ? hp : null };
-  try { await db.doc("settings/main").set(next); closeSheet("#setScrim"); toast("Settings saved"); }
-  catch { toast("Couldn't save settings just now."); }
+  run(() => db.doc("settings/main").set(next), "Settings didn't save");
+  if (db === Store) settings = { ...DEFAULTS, ...next };
+  closeSheet("#setScrim"); toast("Settings saved");
 });
 
 /* ---------- wiring ---------- */
@@ -667,25 +708,106 @@ $("#importFile").addEventListener("change", async e => {
   try {
     const j = JSON.parse(await f.text());
     if (!j || !Array.isArray(j.charges)) throw 0;
-    const byId = new Map(charges.map(c => [c.id, c]));
-    let added = 0; for (const c of j.charges) { if (c && c.id && c.date) { if (!byId.has(c.id)) added++; byId.set(c.id, c); } }
-    Store.replaceAll([...byId.values()], j.settings ? { ...settings, ...j.settings } : settings);
-    closeSheet("#setScrim"); toast(`Backup loaded · ${added} new charge${added === 1 ? "" : "s"}`);
+    const have = new Set(charges.map(c => c.id));
+    const added = j.charges.filter(c => c && c.id && c.date && !have.has(c.id)).length;
+    const msg = `Backup loaded · ${added} new charge${added === 1 ? "" : "s"}`;
+    closeSheet("#setScrim");
+    if (db === Store) {
+      const byId = new Map(charges.map(c => [c.id, c]));
+      for (const c of j.charges) if (c && c.id && c.date) byId.set(c.id, c);
+      Store.replaceAll([...byId.values()], j.settings ? { ...settings, ...j.settings } : settings);
+      toast(msg);
+    } else {
+      toast("Loading backup…");
+      window.Cloud.merge(j.charges, j.settings).then(() => toast(msg), () => toast("The backup didn't load. Check the connection and try again."));
+    }
   } catch { toast("That file isn't a Charge Log backup."); }
 });
 
-function boot() {
-  db = Store; canWrite = true;
-  const sync = () => { const s = Store.read(); charges = s.charges; settings = { ...DEFAULTS, ...s.settings }; loaded = true; applyUnits(); renderAll(); };
-  Store.onChange = sync;
-  addEventListener("storage", e => { if (e.key === Store.KEY) sync(); });
-  sync(); applyWrite();
+/* ---------- modes: on this device only, or synced through a Firebase account ---------- */
+let unsub = null, cloudTimer = null;
+const localSync = () => { if (db !== Store) return; const s = Store.read(); charges = s.charges; settings = { ...DEFAULTS, ...s.settings }; loaded = true; applyUnits(); renderAll(); };
+
+function useLocal() {
+  db = Store; canWrite = true; Store.onChange = localSync;
+  localSync(); applyWrite();
   if (!Store.ok) note("This browser isn't letting the app save data (private mode?). Charges you add will be lost when you close it.");
+}
+
+function setSync(state) {
+  const el = $("#sync"); el.hidden = !state; if (!state) return;
+  el.dataset.s = state;
+  const txt = { connecting: "Connecting…", synced: "Synced", pending: "Saving…", offline: "Offline · saved here", error: "Sync stopped" }[state];
+  $("#syncTxt").textContent = txt; el.title = txt;
+}
+
+function onAuth(user) {
+  clearTimeout(cloudTimer);
+  if (unsub) { unsub(); unsub = null; }
+  if (!user) {
+    db = null; canWrite = false; charges = []; loaded = false; setSync(null);
+    $("#acctBox").hidden = true; applyWrite(); renderAll();
+    $("#gate").hidden = false; return;
+  }
+  $("#gate").hidden = true; note("");
+  db = window.Cloud; canWrite = true; Store.onChange = null; loaded = false; setSync("connecting");
+  $("#acctBox").hidden = false; $("#acctEmail").textContent = "Signed in as " + user.email;
+  $("#backupHint").textContent = "Charges sync to your account on every device. A backup file now and then is still a good idea.";
+  applyWrite(); renderAll();
+  // Charges logged on this device before sync was set up move into the account once.
+  const local = Store.read();
+  if (local.charges.length) {
+    window.Cloud.merge(local.charges, local.settings).then(n => {
+      try { localStorage.setItem(Store.KEY + ".moved", localStorage.getItem(Store.KEY)); localStorage.removeItem(Store.KEY); } catch {}
+      toast(`Moved ${n} charge${n === 1 ? "" : "s"} from this device into your account`);
+    }, () => toast("This device's charges couldn't be moved yet. They're still saved here."));
+  }
+  unsub = window.Cloud.subscribe(
+    (list, meta) => { charges = list; loaded = true; setSync(meta.hasPendingWrites ? "pending" : meta.fromCache ? "offline" : "synced"); renderAll(); },
+    s => { settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll(); },
+    e => { console.error(e); setSync("error"); note("Sync stopped. Close and reopen the app to reconnect."); }
+  );
+}
+
+$("#signInForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const em = $("#g-email").value.trim(), pw = $("#g-pw").value, er = $("#gateErr"), b = $("#gateBtn");
+  er.hidden = true;
+  if (!em || !pw) { er.textContent = "Enter the email and password for the Charge Log account."; er.hidden = false; return; }
+  if (!window.Cloud) { er.textContent = "Can't reach the sign-in service. Check the internet connection."; er.hidden = false; return; }
+  b.disabled = true; b.textContent = "Signing in…";
+  try { await window.Cloud.signIn(em, pw); $("#g-pw").value = ""; }
+  catch (x) {
+    const c = x && x.code || "";
+    er.textContent = /invalid-credential|wrong-password|user-not-found|invalid-email/.test(c) ? "That email and password don't match. Check them and try again."
+      : /too-many-requests/.test(c) ? "Too many tries. Wait a few minutes, or reset the password."
+      : /network/.test(c) ? "No internet connection. Connect and try again." : "Sign-in didn't work (" + c + ").";
+    er.hidden = false;
+  }
+  b.disabled = false; b.textContent = "Sign in";
+});
+$("#forgotBtn").addEventListener("click", async () => {
+  const em = $("#g-email").value.trim(), er = $("#gateErr");
+  if (!em) { er.textContent = "Type the email address first, then tap Forgot password."; er.hidden = false; return; }
+  try { await window.Cloud.resetPassword(em); toast("Password reset email sent to " + em); er.hidden = true; }
+  catch { er.textContent = "Couldn't send the reset email. Check the address and connection."; er.hidden = false; }
+});
+$("#signOutBtn").addEventListener("click", () => { closeSheet("#setScrim"); window.Cloud && window.Cloud.signOut(); });
+
+function boot() {
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  addEventListener("storage", e => { if (e.key === Store.KEY) localSync(); });
+  if (!window.CHARGE_LOG_FIREBASE) { useLocal(); return; }
+  setSync("connecting"); renderAll();
+  addEventListener("cloud-auth", e => onAuth(e.detail));
+  const fallback = () => { if (db) return; note("Sync couldn't load, so this shows charges saved on this device only."); setSync("offline"); useLocal(); };
+  addEventListener("cloud-failed", fallback);
+  cloudTimer = setTimeout(fallback, 15000);
 }
 boot();
 })();
 </script>
+<script type="module" src="cloud.js"></script>
 </body>
 </html>

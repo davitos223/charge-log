@@ -15,9 +15,26 @@ Open the link above, then:
 
 Download `ChargeLog.exe` from the [latest release](https://github.com/davitos223/charge-log/releases/latest) and run it. It opens the same app in its own window and always shows the newest version, so you only download it once.
 
-## Your data
+## Your data and sync
 
-Charges are saved on the device you enter them on. They are never uploaded. Use **Settings → Save backup file / Load backup file** to keep a backup or copy charges between devices.
+Sign in once on each device with the same Charge Log account, and the phone and PC share one charge list. Charges sync through Firebase (project `charge-log-5a6c4`, Firestore in eur3). Each account can only read and write its own charges (see the rules below), and new accounts can only be added in the Firebase console.
+
+Charges logged without signal are saved on the device and upload when it's back online. **Settings → Save backup file** still exports everything as a JSON file.
+
+To run without sync, set `window.CHARGE_LOG_FIREBASE = null` in `docs/config.js`. Charges then stay on each device.
+
+Firestore rules:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
 
 ## Updating
 
