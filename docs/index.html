@@ -48,6 +48,21 @@
   --danger:#F07560; --scrim:rgba(0,0,0,.6); --shadow:0 1px 2px rgba(0,0,0,.3);
   color-scheme:dark;
 }
+/* Accent colours (Settings → Colour). Teal is the default above. Home charging uses the accent. */
+:root[data-accent="blue"]{--accent:#2459C4;--accent-soft:#DFE8F8;--home:#2459C4}
+:root[data-accent="green"]{--accent:#1E8449;--accent-soft:#DCF1E4;--home:#1E8449}
+:root[data-accent="rose"]{--accent:#C0365F;--accent-soft:#F8DFE7;--home:#C0365F}
+:root[data-accent="graphite"]{--accent:#3E4C59;--accent-soft:#E3E8EC;--home:#3E4C59}
+@media (prefers-color-scheme: dark){
+  :root[data-accent="blue"]:not([data-theme="light"]){--accent:#6F9EF2;--accent-soft:#172A4A;--home:#6F9EF2}
+  :root[data-accent="green"]:not([data-theme="light"]){--accent:#4CC27F;--accent-soft:#15372A;--home:#4CC27F}
+  :root[data-accent="rose"]:not([data-theme="light"]){--accent:#F07A9C;--accent-soft:#3D1A26;--home:#F07A9C}
+  :root[data-accent="graphite"]:not([data-theme="light"]){--accent:#B9C6D1;--accent-soft:#26323C;--home:#B9C6D1}
+}
+:root[data-accent="blue"][data-theme="dark"]{--accent:#6F9EF2;--accent-soft:#172A4A;--home:#6F9EF2}
+:root[data-accent="green"][data-theme="dark"]{--accent:#4CC27F;--accent-soft:#15372A;--home:#4CC27F}
+:root[data-accent="rose"][data-theme="dark"]{--accent:#F07A9C;--accent-soft:#3D1A26;--home:#F07A9C}
+:root[data-accent="graphite"][data-theme="dark"]{--accent:#B9C6D1;--accent-soft:#26323C;--home:#B9C6D1}
 *{box-sizing:border-box}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
@@ -135,6 +150,30 @@ button{font:inherit;color:inherit}
 #chart .grid{stroke:var(--line);stroke-width:1}
 #chart .cur{fill:var(--ink);font-weight:500}
 .f-home{fill:var(--home)} .f-public{fill:var(--public)} .f-fast{fill:var(--fast)}
+/* car series: shades of the accent, so they never look like a charger type */
+:root{--s0:var(--accent);--s1:color-mix(in srgb,var(--accent) 50%,var(--ink));--s2:color-mix(in srgb,var(--accent) 45%,var(--surface))}
+.f-s0{fill:var(--s0)} .f-s1{fill:var(--s1)} .f-s2{fill:var(--s2)}
+.s-s0{stroke:var(--s0);fill:var(--s0)} .s-s1{stroke:var(--s1);fill:var(--s1)} .s-s2{stroke:var(--s2);fill:var(--s2)}
+#chart .area{fill-opacity:.16;stroke:none}
+#chart .ln{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+#chart .dot{stroke:var(--surface);stroke-width:1.5}
+.bg-home{background:var(--home)} .bg-public{background:var(--public)} .bg-fast{background:var(--fast)}
+.bg-s0{background:var(--s0)} .bg-s1{background:var(--s1)} .bg-s2{background:var(--s2)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
+.opts label{position:relative;cursor:pointer}
+.opts input,.swatches input{position:absolute;opacity:0;pointer-events:none}
+.opts span{display:block;text-align:center;padding:9px 8px;border:1.5px solid var(--line);border-radius:10px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.opts input:checked + span{border-color:var(--accent);background:var(--accent-soft)}
+.opts input:focus-visible + span,.swatches input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.swatches{display:flex;gap:14px;flex-wrap:wrap}
+@media (max-width:460px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.swatches label{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.swatches span{width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--line)}
+.swatches input:checked + span{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--ink)}
+.swatches em{font-style:normal;font-size:12px;color:var(--muted)}
+.chartkey{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;font-weight:500;color:var(--muted)}
+.chartkey span{display:inline-flex;align-items:center;gap:6px}
+.chartkey .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
 .chart-empty{display:grid;place-items:center;min-height:200px;color:var(--muted);font-size:14px;text-align:center;border:1px dashed var(--line);border-radius:12px;padding:16px}
 .legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .leg{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--surface-2);min-width:0}
@@ -258,9 +297,11 @@ button{font:inherit;color:inherit}
       <div class="seg-mini" role="group" aria-label="Chart shows">
         <button type="button" id="m-cost" aria-pressed="true">Spend</button>
         <button type="button" id="m-kwh" aria-pressed="false">Energy</button>
+        <button type="button" id="m-dist" aria-pressed="false">Distance</button>
       </div>
     </div>
     <div class="yearsum" id="yearSum"></div>
+    <div class="chartkey" id="chartKey" hidden></div>
     <div id="chart"></div>
     <div class="legend" id="legend"></div>
   </section>
@@ -339,6 +380,31 @@ button{font:inherit;color:inherit}
     </div>
     <label class="fld"><span>Home electricity price</span><div class="unit"><input type="text" inputmode="decimal" id="s-home" autocomplete="off" placeholder="0.25"><em class="u-curkwh">/kWh</em></div></label>
     <p class="hint">With a home price set, home charges work out their own cost from the kWh, so you can leave the cost empty.</p>
+    <div class="fld"><span>Theme</span>
+      <div class="opts" role="radiogroup" aria-label="Theme">
+        <label><input type="radio" name="theme" value="auto" id="th-auto"><span>Automatic</span></label>
+        <label><input type="radio" name="theme" value="light" id="th-light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark" id="th-dark"><span>Dark</span></label>
+      </div>
+    </div>
+    <div class="fld"><span>Colour</span>
+      <div class="swatches" role="radiogroup" aria-label="Colour">
+        <label title="Teal"><input type="radio" name="accent" value="teal" id="ac-teal"><span style="background:#0B7A93"></span><em>Teal</em></label>
+        <label title="Blue"><input type="radio" name="accent" value="blue" id="ac-blue"><span style="background:#2459C4"></span><em>Blue</em></label>
+        <label title="Green"><input type="radio" name="accent" value="green" id="ac-green"><span style="background:#1E8449"></span><em>Green</em></label>
+        <label title="Rose"><input type="radio" name="accent" value="rose" id="ac-rose"><span style="background:#C0365F"></span><em>Rose</em></label>
+        <label title="Graphite"><input type="radio" name="accent" value="graphite" id="ac-graphite"><span style="background:#3E4C59"></span><em>Graphite</em></label>
+      </div>
+    </div>
+    <div class="fld"><span>Chart style</span>
+      <div class="opts four" role="radiogroup" aria-label="Chart style">
+        <label><input type="radio" name="chartStyle" value="bars" id="cs-bars"><span>Bars</span></label>
+        <label><input type="radio" name="chartStyle" value="lines" id="cs-lines"><span>Lines</span></label>
+        <label><input type="radio" name="chartStyle" value="area" id="cs-area"><span>Area</span></label>
+        <label><input type="radio" name="chartStyle" value="cumulative" id="cs-cumulative"><span>Running total</span></label>
+      </div>
+      <p class="hint">Running total adds each month to the last, so you can see the year build up, like the Charts tab in the spreadsheet.</p>
+    </div>
     <div class="fld"><span>Cars</span>
       <div class="carnames" id="carNames"></div>
       <p class="hint">Rename a car here, or type a name in the empty box to add another car.</p>
@@ -382,7 +448,9 @@ button{font:inherit;color:inherit}
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null };
+const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, theme: "auto", accent: "teal", chartStyle: "bars" };
+// apply the last theme/colour straight away so the page doesn't flash before settings load
+try { const l = JSON.parse(localStorage.getItem("chargelog.look") || "{}"); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
 const TYPES = {
   home:   { label: "Home",    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>' },
   public: { label: "Public",  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/></svg>' },
@@ -543,41 +611,93 @@ function renderStats() {
       <span class="sub">${effSub}</span></div>`;
 }
 
-function last12() { const out = []; const d = new Date(todayISO() + "T00:00:00"); d.setDate(1); for (let i = 11; i >= 0; i--) { const x = new Date(d.getFullYear(), d.getMonth() - i, 1); out.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`); } return out; }
 function niceStep(x) { if (x <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); const n = x / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
 
-function renderChart() {
-  const box = $("#chart");
+const METRICS = { cost: "spend", kwh: "energy", dist: "distance" };
+function fmtMetric(v, short) {
+  if (metric === "cost") return short ? (curSymbol().length <= 2 ? curSymbol() : "") + nf(v, v > 0 && v < 10 && short === "fine" ? 1 : 0) : money(v);
+  if (metric === "kwh") return short ? nf(v, 0) : nf(v, 1) + " kWh";
+  return short ? nf(v, 0) : nf(v, 0) + " " + distU();
+}
+
+// Builds the chart's series for the chosen year: by charger type for spend/energy bars,
+// per car when several cars are shown together, otherwise one total.
+function chartSeries(styleOverride) {
   const months = Array.from({ length: 12 }, (_, i) => `${yearSel}-${String(i + 1).padStart(2, "0")}`);
-  const val = c => metric === "cost" ? (costOf(c) || 0) : (c.kwh || 0);
-  const data = months.map(k => { const r = { k, home: 0, public: 0, fast: 0 }; for (const c of vc()) if (ym(c.date || "") === k && r[c.type] !== undefined) r[c.type] += val(c); r.total = r.home + r.public + r.fast; return r; });
-  const max = Math.max(0, ...data.map(r => r.total));
+  const style = (typeof styleOverride === "string" && styleOverride) || settings.chartStyle || "bars";
+  const ds = metric === "dist" ? distSince() : null;
+  const val = c => metric === "cost" ? (costOf(c) || 0) : metric === "kwh" ? (c.kwh || 0) : Math.max(0, ds[c.id] || 0);
+  let groups, pick;
+  if (style === "bars" && metric !== "dist") {
+    groups = Object.entries(TYPES).map(([k, T]) => ({ key: k, label: T.label, cls: k })); pick = c => c.type;
+  } else if (multiCar() && carSel === "all") {
+    groups = cars().map((c, i) => ({ key: c.id, label: c.name, cls: "s" + (i % 3) })); pick = carOf;
+  } else {
+    groups = [{ key: "all", label: METRICS[metric][0].toUpperCase() + METRICS[metric].slice(1), cls: "s0" }]; pick = () => "all";
+  }
+  for (const g of groups) g.v = months.map(() => 0);
+  const idx = Object.fromEntries(months.map((m, i) => [m, i]));
+  for (const c of vc()) {
+    const i = idx[ym(c.date || "")]; if (i === undefined) continue;
+    const g = groups.find(x => x.key === pick(c)); if (g) g.v[i] += val(c);
+  }
+  if (style === "cumulative") for (const g of groups) for (let i = 1; i < 12; i++) g.v[i] += g.v[i - 1];
+  // in the current year, lines stop at this month instead of dropping to zero
+  const lastIdx = yearSel === thisYear() ? Number(todayISO().slice(5, 7)) - 1 : 11;
+  return { months, groups, style, lastIdx };
+}
+
+function renderChart(styleOverride) {
+  const box = $("#chart");
+  const { months, groups, style, lastIdx } = chartSeries(styleOverride);
+  const stacked = style === "bars";
+  const totals = months.map((_, i) => groups.reduce((a, g) => a + g.v[i], 0));
+  const max = stacked ? Math.max(0, ...totals) : Math.max(0, ...groups.flatMap(g => g.v));
+  const key = $("#chartKey");
+  key.hidden = stacked && metric !== "dist" || groups.length < 2;
+  key.innerHTML = groups.map(g => `<span><i class="sw bg-${g.cls}"></i>${esc(g.label)}</span>`).join("");
   if (!loaded || max === 0) {
-    box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + (metric === "cost" ? "spend" : "energy") + " for " + yearSel + " shows up here once charges are logged." : "Loading…"}</div>`;
+    box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + METRICS[metric] + " for " + yearSel + " shows up here once charges are logged." : "Loading…"}</div>`;
     return;
   }
-  const W = Math.max(300, Math.round(box.clientWidth || 600)), H = 220;
-  const pad = { l: 48, r: 6, t: 10, b: 26 };
+  const W = Math.max(300, Math.round(box.clientWidth || 600)), H = 230;
+  const pad = { l: 50, r: 10, t: 12, b: 26 };
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const step = niceStep(max / 4), top = Math.ceil(max / step) * step;
   const y = v => pad.t + ih - (v / top) * ih;
-  const slot = iw / 12, bw = Math.min(34, slot * 0.62);
-  const tickFmt = v => metric === "cost" ? (curSymbol().length <= 2 ? curSymbol() : "") + nf(v, v < 10 && step < 1 ? 1 : 0) : nf(v, 0);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric === "cost" ? "Monthly spend" : "Monthly energy"}, ${yearSel}">`;
-  for (let v = 0; v <= top + 1e-9; v += step) { const yy = y(v).toFixed(1); s += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}"/><text x="${pad.l - 8}" y="${+yy + 4}" text-anchor="end">${tickFmt(v)}</text>`; }
+  const slot = iw / 12, bw = Math.min(34, slot * 0.62), cx = i => pad.l + slot * i + slot / 2;
+  const label = (style === "cumulative" ? "Running total of " : "Monthly ") + METRICS[metric];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, ${yearSel}">`;
+  for (let v = 0; v <= top + 1e-9; v += step) { const yy = y(v).toFixed(1); s += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}"/><text x="${pad.l - 8}" y="${+yy + 4}" text-anchor="end">${fmtMetric(v, step < 1 ? "fine" : true)}</text>`; }
   const cur = ym(todayISO()); const narrow = W < 460;
-  data.forEach((r, i) => {
-    const x = pad.l + slot * i + (slot - bw) / 2; let acc = 0;
-    const tip = `${monthName(r.k)}: ${metric === "cost" ? money(r.total) : nf(r.total, 1) + " kWh"}`;
-    s += `<g><title>${esc(tip)}</title>`;
-    for (const t of ["home", "public", "fast"]) {
-      if (r[t] <= 0) continue;
-      const y0 = y(acc), y1 = y(acc + r[t]); acc += r[t];
-      s += `<rect class="f-${t}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2"/>`;
+
+  if (stacked) {
+    months.forEach((k, i) => {
+      const x = pad.l + slot * i + (slot - bw) / 2; let acc = 0;
+      for (const g of groups) {
+        if (g.v[i] <= 0) continue;
+        const y0 = y(acc), y1 = y(acc + g.v[i]); acc += g.v[i];
+        s += `<rect class="f-${g.cls}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2"/>`;
+      }
+    });
+  } else {
+    for (const g of groups) {
+      // start each line at its first month with data (a car bought mid-year doesn't sit on zero before then)
+      const first = g.v.findIndex(v => v > 0); if (first < 0 || first > lastIdx) continue;
+      const pts = g.v.slice(0, lastIdx + 1).map((v, i) => [cx(i), y(v), i]).slice(first);
+      const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+      if (style === "area" || style === "cumulative")
+        s += `<polygon class="area f-${g.cls}" points="${pts[0][0].toFixed(1)},${y(0).toFixed(1)} ${line} ${pts[pts.length - 1][0].toFixed(1)},${y(0).toFixed(1)}"/>`;
+      s += `<polyline class="ln s-${g.cls}" points="${line}"/>`;
+      pts.forEach((p, j) => { if (g.v[p[2]] > 0 || style === "cumulative") s += `<circle class="dot s-${g.cls}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${j === pts.length - 1 ? 4 : 2.6}"/>`; });
     }
-    s += `<rect x="${(pad.l + slot * i).toFixed(1)}" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih}" fill="transparent"/></g>`;
-    const lbl = monthName(r.k, { month: narrow ? "narrow" : "short" });
-    s += `<text x="${(pad.l + slot * i + slot / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle"${r.k === cur ? ' class="cur"' : ""}>${esc(lbl)}</text>`;
+  }
+  // hover targets with the month's numbers
+  months.forEach((k, i) => {
+    const parts = groups.filter(g => g.v[i] > 0).map(g => `${g.label}: ${fmtMetric(g.v[i])}`);
+    const tip = `${monthName(k)}${style === "cumulative" ? " (so far)" : ""}` + (parts.length ? "\n" + parts.join("\n") : ": none") + (groups.length > 1 && parts.length > 1 ? `\nTotal: ${fmtMetric(totals[i])}` : "");
+    s += `<rect x="${(pad.l + slot * i).toFixed(1)}" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih}" fill="transparent"><title>${esc(tip)}</title></rect>`;
+    s += `<text x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"${k === cur ? ' class="cur"' : ""}>${esc(monthName(k, { month: narrow ? "narrow" : "short" }))}</text>`;
   });
   box.innerHTML = s + "</svg>";
 }
@@ -644,7 +764,10 @@ let tt; function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidd
 /* ---------- sheets ---------- */
 let lastFocus = null;
 function openSheet(id) { lastFocus = document.activeElement; $(id).hidden = false; }
-function closeSheet(id) { $(id).hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+function closeSheet(id) {
+  $(id).hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus();
+  if (id === "#setScrim") { applyAppearance(); renderChart(); }   // undo any unsaved preview
+}
 document.querySelectorAll(".scrim").forEach(s => {
   s.addEventListener("click", e => { if (e.target === s || e.target.closest("[data-close]")) closeSheet("#" + s.id); });
 });
@@ -750,7 +873,25 @@ function openSettings() {
   $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
     `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
   $("#carNames").querySelectorAll("input").forEach(i => i.className = "");
+  for (const [name, val] of [["theme", settings.theme], ["accent", settings.accent], ["chartStyle", settings.chartStyle]]) {
+    const r = document.querySelector(`input[name="${name}"][value="${val}"]`) || document.querySelector(`input[name="${name}"]`); r.checked = true;
+  }
   openSheet("#setScrim");
+}
+const appearanceFromForm = () => ({
+  theme: (document.querySelector('input[name="theme"]:checked') || {}).value || "auto",
+  accent: (document.querySelector('input[name="accent"]:checked') || {}).value || "teal",
+  chartStyle: (document.querySelector('input[name="chartStyle"]:checked') || {}).value || "bars",
+});
+// Theme, colour and chart style preview straight away; closing Settings without saving puts them back.
+$("#setForm").addEventListener("change", e => {
+  if (["theme", "accent", "chartStyle"].includes(e.target.name)) { const a = appearanceFromForm(); applyAppearance(a); renderChart(a.chartStyle); }
+});
+function applyAppearance(a = settings) {
+  const r = document.documentElement;
+  if (a.theme === "light" || a.theme === "dark") r.dataset.theme = a.theme; else delete r.dataset.theme;
+  if (a.accent && a.accent !== "teal") r.dataset.accent = a.accent; else delete r.dataset.accent;
+  try { localStorage.setItem("chargelog.look", JSON.stringify({ theme: a.theme, accent: a.accent })); } catch {}
 }
 function readCars() {
   const out = [];
@@ -765,10 +906,10 @@ $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
   const hp = parseDec($("#s-home").value);
   if (Number.isNaN(hp)) { toast("Home price should be a number, for example 0.25"); return; }
-  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrice: isNum(hp) ? hp : null, cars: readCars() };
+  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrice: isNum(hp) ? hp : null, cars: readCars(), ...appearanceFromForm() };
   run(() => db.doc("settings/main").set(next), "Settings didn't save");
-  if (db === Store) settings = { ...DEFAULTS, ...next };
-  closeSheet("#setScrim"); toast("Settings saved");
+  settings = { ...DEFAULTS, ...next };
+  closeSheet("#setScrim"); applyUnits(); renderAll(); toast("Settings saved");
 });
 
 /* ---------- wiring ---------- */
@@ -778,6 +919,7 @@ function applyWrite() {
   renderList();
 }
 function applyUnits() {
+  applyAppearance();
   document.querySelectorAll(".u-dist").forEach(e => e.textContent = distU());
   document.querySelectorAll(".u-cur").forEach(e => e.textContent = curSymbol());
   document.querySelectorAll(".u-curkwh").forEach(e => e.textContent = curSymbol() + "/kWh");
@@ -800,8 +942,9 @@ $("#list").addEventListener("click", e => {
 document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f; document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderList();
 }));
-[["#m-cost", "cost"], ["#m-kwh", "kwh"]].forEach(([id, m]) => $(id).addEventListener("click", () => {
-  metric = m; $("#m-cost").setAttribute("aria-pressed", String(m === "cost")); $("#m-kwh").setAttribute("aria-pressed", String(m === "kwh")); renderChart();
+const METRIC_BTNS = [["#m-cost", "cost"], ["#m-kwh", "kwh"], ["#m-dist", "dist"]];
+METRIC_BTNS.forEach(([id, m]) => $(id).addEventListener("click", () => {
+  metric = m; METRIC_BTNS.forEach(([bid, bm]) => $(bid).setAttribute("aria-pressed", String(bm === m))); renderChart();
 }));
 let rz; try { new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(renderChart); }).observe($("#chart")); } catch {}
 
