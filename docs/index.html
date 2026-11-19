@@ -113,6 +113,20 @@ button{font:inherit;color:inherit}
 .carpick input:checked + span{border-color:var(--ink);background:var(--surface-2)}
 .carpick input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .carnames{display:flex;flex-direction:column;gap:8px}
+.rates{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.rates:empty{display:none}
+.rate{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 8px 9px 12px;background:var(--surface-2)}
+.rate + .rate{border-top:1px solid var(--line)}
+.rate b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.rate span{font-size:13px;color:var(--muted);min-width:0}
+.rate .now{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 6px}
+.rate button{border:0;background:none;color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:18px;line-height:1}
+.rate button:hover{background:var(--line);color:var(--danger)}
+.rate-add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr) auto;gap:8px;align-items:center}
+.rate-add .unit input{padding-right:46px}
+@media (max-width:420px){.rate-add .btn{padding:10px 11px}.rate-add select{padding:10px 4px}}
+.rate-add select{font:inherit;font-size:15px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 8px;min-width:0}
+.rate-add .btn{padding:10px 14px}
 .yearpick{font:inherit;font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:5px 34px 5px 12px;cursor:pointer;appearance:none;-webkit-appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%;background-size:5px 5px;background-repeat:no-repeat}
 .yearsum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -404,8 +418,15 @@ button{font:inherit;color:inherit}
       <label class="fld"><span>Distance</span>
         <select id="s-unit"><option value="km">Kilometres</option><option value="mi">Miles</option></select></label>
     </div>
-    <label class="fld"><span>Home electricity price</span><div class="unit"><input type="text" inputmode="decimal" id="s-home" autocomplete="off" placeholder="0.25"><em class="u-curkwh">/kWh</em></div></label>
-    <p class="hint">With a home price set, home charges work out their own cost from the kWh, so you can leave the cost empty.</p>
+    <div class="fld"><span>Home electricity price</span>
+      <div class="rates" id="rates"></div>
+      <div class="rate-add">
+        <div class="unit"><input type="text" inputmode="decimal" id="s-home" autocomplete="off" placeholder="0.25" aria-label="New home price"><em class="u-curkwh">/kWh</em></div>
+        <select id="s-from" aria-label="Price applies from"></select>
+        <button type="button" class="btn ghost" id="addRate">Add</button>
+      </div>
+      <p class="hint">Home charges logged without a cost use the price for their own date, so you can leave the cost empty. Charges already saved keep their cost.</p>
+    </div>
     <div class="fld"><span>Theme</span>
       <div class="opts" role="radiogroup" aria-label="Theme">
         <label><input type="radio" name="theme" value="auto" id="th-auto"><span>Automatic</span></label>
@@ -474,7 +495,7 @@ button{font:inherit;color:inherit}
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, theme: "auto", accent: "teal", chartStyle: "bars" };
+const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
 try { const l = JSON.parse(localStorage.getItem("chargelog.look") || "{}"); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
 const TYPES = {
@@ -531,7 +552,15 @@ function parseInt0(v) { v = String(v).replace(/[^\d]/g, ""); return v ? Number(v
 const distU = () => settings.unit === "mi" ? "mi" : "km";
 
 /* ---------- derived ---------- */
-function costOf(c) { if (isNum(c.cost)) return c.cost; if (c.type === "home" && isNum(settings.homePrice) && isNum(c.kwh)) return c.kwh * settings.homePrice; return null; }
+// Home electricity prices, each from a month onwards: [{ from: "" | "YYYY-MM", price }]. "" = from the start.
+// Older saves only had one homePrice; that counts as a price from the start.
+function homeRates(s = settings) {
+  const list = Array.isArray(s.homePrices) && s.homePrices.length ? s.homePrices : (isNum(s.homePrice) ? [{ from: "", price: s.homePrice }] : []);
+  return list.filter(r => r && isNum(r.price)).map(r => ({ from: r.from || "", price: r.price })).sort((a, b) => a.from.localeCompare(b.from));
+}
+// "2026-12-05" >= "2026-12" compares correctly as text, so a price applies from the 1st of its month
+function homePriceOn(date, rates = homeRates()) { let p = null; for (const r of rates) if (!r.from || (date || todayISO()) >= r.from) p = r.price; return p; }
+function costOf(c) { if (isNum(c.cost)) return c.cost; const hp = c.type === "home" ? homePriceOn(c.date) : null; if (isNum(hp) && isNum(c.kwh)) return c.kwh * hp; return null; }
 /* cars: settings.cars = [{id, name}]; a charge without a car belongs to the first car */
 const cars = () => Array.isArray(settings.cars) ? settings.cars.filter(c => c && c.id && c.name) : [];
 const multiCar = () => cars().length > 1;
@@ -893,9 +922,9 @@ function openForm(c) {
 
 function updatePreview() {
   const kwh = parseDec(F.kwh.value), cost = parseDec(F.cost.value);
-  const home = formType() === "home" && isNum(settings.homePrice);
-  const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * settings.homePrice : null);
-  F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * settings.homePrice, 2)}` : "0.00";
+  const hp = formType() === "home" ? homePriceOn(F.date.value) : null, home = isNum(hp);
+  const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * hp : null);
+  F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * hp, 2)}` : "0.00";
   const ppk = isNum(effCost) && kwh > 0 ? effCost / kwh : null;
   $("#preview").innerHTML = `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`;
 }
@@ -921,7 +950,8 @@ $("#chargeForm").addEventListener("submit", async e => {
   const type = formType();
   const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
     odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
-  if (data.cost == null && type === "home" && isNum(settings.homePrice)) data.cost = Math.round(kwh * settings.homePrice * 100) / 100;
+  const hpOn = type === "home" ? homePriceOn(date) : null;
+  if (data.cost == null && isNum(hpOn)) data.cost = Math.round(kwh * hpOn * 100) / 100;
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
   const wasEdit = !!editingId;
   run(() => wasEdit
@@ -952,7 +982,7 @@ $("#delBtn").addEventListener("click", async () => {
 /* ---------- settings ---------- */
 function openSettings() {
   $("#s-cur").value = settings.currency; $("#s-unit").value = settings.unit;
-  $("#s-home").value = isNum(settings.homePrice) ? settings.homePrice : "";
+  rateDraft = homeRates(); $("#s-home").value = ""; renderRates();
   $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
     `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
   $("#carNames").querySelectorAll("input").forEach(i => i.className = "");
@@ -985,11 +1015,44 @@ function readCars() {
   }
   return out;
 }
+/* home price list in Settings: edited as a draft, saved with the rest */
+let rateDraft = [];
+const ymAdd = (k, n) => { const [y, m] = k.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+function renderRates() {
+  const now = ym(todayISO()), current = homePriceOn(todayISO(), rateDraft);
+  $("#rates").innerHTML = rateDraft.map((r, i) => {
+    const next = rateDraft[i + 1];
+    const when = (r.from ? "From " + monthName(r.from) : "From the start") + (next ? " to " + monthName(ymAdd(next.from, -1)) : "");
+    const isNow = (!r.from || r.from <= now) && (!next || next.from > now);
+    return `<div class="rate"><b>${money(r.price, 3)}</b><span>${esc(when)}</span>${isNow ? '<span class="now">Now</span>' : "<i></i>"}<button type="button" data-del="${i}" aria-label="Remove ${esc(money(r.price, 3))} ${esc(when.toLowerCase())}">×</button></div>`;
+  }).join("");
+  // month dropdown: "from the start" plus two years back to a year ahead; next month is the usual choice
+  const sel = $("#s-from"), opts = [["", rateDraft.length ? "From the start" : "For all charges"]];
+  for (let n = 12; n >= -24; n--) { const k = ymAdd(now, n); opts.push([k, "From " + monthName(k, { month: "short", year: "numeric" })]); }
+  sel.innerHTML = opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("");
+  sel.value = rateDraft.length ? ymAdd(now, 1) : "";
+  $("#s-home").placeholder = isNum(current) ? String(current) : "0.25";
+}
+function addRateFromInputs() {
+  const v = parseDec($("#s-home").value);
+  if (v == null) return true;                     // nothing typed
+  if (Number.isNaN(v) || v < 0) { toast("Home price should be a number, for example 0.25"); return false; }
+  const from = $("#s-from").value;
+  rateDraft = [...rateDraft.filter(r => r.from !== from), { from, price: Math.round(v * 10000) / 10000 }].sort((a, b) => a.from.localeCompare(b.from));
+  $("#s-home").value = ""; renderRates(); return true;
+}
+$("#addRate").addEventListener("click", () => { if (addRateFromInputs()) $("#s-home").focus(); });
+$("#s-home").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addRateFromInputs(); } });
+$("#rates").addEventListener("click", e => {
+  const b = e.target.closest("button[data-del]"); if (!b) return;
+  rateDraft.splice(+b.dataset.del, 1); renderRates();
+});
 $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const hp = parseDec($("#s-home").value);
-  if (Number.isNaN(hp)) { toast("Home price should be a number, for example 0.25"); return; }
-  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrice: isNum(hp) ? hp : null, cars: readCars(), ...appearanceFromForm() };
+  if (!addRateFromInputs()) return;               // a price typed but not added yet is added on save
+  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrices: rateDraft,
+    homePrice: homePriceOn(todayISO(), rateDraft),  // kept for older copies of the app
+    cars: readCars(), ...appearanceFromForm() };
   run(() => db.doc("settings/main").set(next), "Settings didn't save");
   settings = { ...DEFAULTS, ...next };
   closeSheet("#setScrim"); applyUnits(); renderAll(); toast("Settings saved");
