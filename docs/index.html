@@ -496,6 +496,7 @@ button{font:inherit;color:inherit}
       </div>
       <p class="hint" id="backupHint">Charges are saved on this device. Save a backup now and then, and use it to copy charges to another device.</p>
     </div>
+    <p class="hint appver">Charge Log version <span id="appVer"></span></p>
     <div class="sheet-actions"><span class="spacer"></span>
       <button type="button" class="btn ghost" data-close>Cancel</button>
       <button type="submit" class="btn primary" id="setSave">Save settings</button>
@@ -518,12 +519,13 @@ button{font:inherit;color:inherit}
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="config.js"></script>
+<script src="config.js?v=20261119b"></script>
 
 <script>
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
+const APP_VERSION = "20261119b";   // keep in step with the ?v= on config.js and cloud.js
 const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
 try { const l = JSON.parse(localStorage.getItem("chargelog.look") || "{}"); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
@@ -830,6 +832,16 @@ function renderChart(styleOverride) {
   hideTip();
 }
 
+// Save part of the settings (maps like claimed/people merge one level deep).
+// Falls back to saving the whole settings if this copy of the sync file has no merge yet.
+function mergeSettings(part) {
+  const ref = db.doc("settings/main");
+  if (typeof ref.merge === "function") return ref.merge(part);
+  const full = { ...settings };
+  for (const [k, v] of Object.entries(part)) full[k] = v && typeof v === "object" && !Array.isArray(v) ? { ...(full[k] || {}), ...v } : v;
+  return ref.set(full);
+}
+
 /* ---------- work claims: months of Work charges, ticked off once paid back ----------
    settings.claimed = { "YYYY-MM": amount claimed }. Comparing with today's amount shows charges added after claiming. */
 const claimedOf = k => { const v = (settings.claimed || {})[k]; return isNum(v) ? v : null; };
@@ -858,7 +870,7 @@ $("#claimList").addEventListener("click", e => {
   const k = b.dataset.claim, on = b.getAttribute("aria-pressed") === "true";
   const val = on ? null : Number(b.dataset.amt);
   settings = { ...settings, claimed: { ...(settings.claimed || {}), [k]: val } }; renderClaims();   // show it straight away
-  run(() => db.doc("settings/main").merge({ claimed: { [k]: val } }), "That didn't save");
+  run(() => mergeSettings({ claimed: { [k]: val } }), "That didn't save");
   toast(on ? `${monthName(k)} marked as not claimed` : `${monthName(k)} marked as claimed`);
 });
 
@@ -1069,7 +1081,8 @@ function run(fn, failMsg) {
     console.error(x);
     toast(x && x.code === "quota_exceeded" ? "This device's storage is full. Save a backup and delete old charges."
       : x && x.code === "permission-denied" ? failMsg + ": you're not signed in to the right account."
-      : failMsg + ". Check the connection and try again.");
+      : x instanceof TypeError ? failMsg + ". Close and reopen the app to finish updating it."
+      : failMsg + ". Check the connection and try again." + (x && (x.code || x.name) ? " (" + (x.code || x.name) + ")" : ""));
   });
   return p;
 }
@@ -1086,6 +1099,8 @@ $("#delBtn").addEventListener("click", async () => {
 function openSettings() {
   $("#s-cur").value = settings.currency; $("#s-unit").value = settings.unit;
   rateDraft = homeRates(); $("#s-home").value = ""; renderRates();
+  const cv = window.Cloud ? (window.Cloud.version || "old") : null;
+  $("#appVer").textContent = APP_VERSION + (cv && cv !== APP_VERSION ? ` · sync file ${cv}: close and reopen the app to finish updating` : "");
   $("#nameBox").hidden = !me; $("#s-name").value = me ? (personName(me) || emailName(myEmail)) : "";
   $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
     `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
@@ -1277,7 +1292,7 @@ function onAuth(user) {
     s => {
       settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll();
       // the first time a login is seen, give it a name from its email so its charges can be labelled
-      if (me && !(settings.people || {})[me] && !registered) { registered = true; db.doc("settings/main").merge({ people: { [me]: emailName(myEmail) } }).catch(() => { registered = false; }); }
+      if (me && !(settings.people || {})[me] && !registered) { registered = true; Promise.resolve().then(() => mergeSettings({ people: { [me]: emailName(myEmail) } })).catch(() => { registered = false; }); }
     },
     e => { console.error(e); setSync("error"); note("Sync stopped. Close and reopen the app to reconnect."); }
   );
@@ -1322,6 +1337,6 @@ function boot() {
 boot();
 })();
 </script>
-<script type="module" src="cloud.js"></script>
+<script type="module" src="cloud.js?v=20261119b"></script>
 </body>
 </html>
