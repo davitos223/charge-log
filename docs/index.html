@@ -88,6 +88,16 @@ button{font:inherit;color:inherit}
 .linkbtn{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:500;cursor:pointer;align-self:flex-start}
 .acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:12px;padding:10px 12px}
 .acct span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.carbar{display:flex;gap:4px;background:var(--surface);border-radius:14px;padding:4px;box-shadow:var(--shadow);overflow-x:auto}
+.carbar button{flex:1;border:0;background:none;border-radius:10px;padding:10px 14px;font-family:var(--display);font-weight:600;font-size:15px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.carbar button[aria-pressed="true"]{background:var(--feature-bg);color:var(--feature-ink)}
+.carpick{display:flex;gap:8px;flex-wrap:wrap}
+.carpick label{position:relative;cursor:pointer;flex:1}
+.carpick input{position:absolute;opacity:0;pointer-events:none}
+.carpick span{display:block;text-align:center;padding:9px 12px;border:1.5px solid var(--line);border-radius:12px;font-weight:600;font-size:14px;white-space:nowrap}
+.carpick input:checked + span{border-color:var(--ink);background:var(--surface-2)}
+.carpick input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.carnames{display:flex;flex-direction:column;gap:8px}
 .note{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:14px}
 
 /* stats */
@@ -228,6 +238,8 @@ button{font:inherit;color:inherit}
     </button>
   </header>
 
+  <div class="carbar" id="carBar" role="group" aria-label="Car" hidden></div>
+
   <div class="note" id="note" hidden></div>
 
   <section class="stats" id="stats" aria-label="Summary"></section>
@@ -270,6 +282,7 @@ button{font:inherit;color:inherit}
       <h2 id="formTitle">Log a charge</h2>
       <button type="button" class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     </div>
+    <div class="carpick" id="carPick" role="radiogroup" aria-label="Which car?" hidden></div>
     <div class="seg" role="radiogroup" aria-label="Where did you charge?">
       <label class="t-home"><input type="radio" name="type" value="home" id="ty-home"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</span></label>
       <label class="t-public"><input type="radio" name="type" value="public" id="ty-public"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/></svg>Public</span></label>
@@ -317,6 +330,10 @@ button{font:inherit;color:inherit}
     </div>
     <label class="fld"><span>Home electricity price</span><div class="unit"><input type="text" inputmode="decimal" id="s-home" autocomplete="off" placeholder="0.25"><em class="u-curkwh">/kWh</em></div></label>
     <p class="hint">With a home price set, home charges work out their own cost from the kWh, so you can leave the cost empty.</p>
+    <div class="fld"><span>Cars</span>
+      <div class="carnames" id="carNames"></div>
+      <p class="hint">Rename a car here, or type a name in the empty box to add another car.</p>
+    </div>
     <div class="fld" id="acctBox" hidden><span>Sync account</span>
       <div class="acct"><span id="acctEmail"></span><button type="button" class="btn ghost" id="signOutBtn">Sign out</button></div>
     </div>
@@ -384,6 +401,7 @@ const Store = {
 try { const t = "__t"; localStorage.setItem(t, "1"); localStorage.removeItem(t); } catch { Store.ok = false; }
 let charges = [], settings = { ...DEFAULTS };
 let filter = "all", metric = "cost", editingId = null;
+let carSel = (() => { try { return localStorage.getItem("chargelog.car") || "all"; } catch { return "all"; } })();
 
 /* ---------- formatting ---------- */
 const isNum = v => typeof v === "number" && isFinite(v);
@@ -408,27 +426,53 @@ const distU = () => settings.unit === "mi" ? "mi" : "km";
 
 /* ---------- derived ---------- */
 function costOf(c) { if (isNum(c.cost)) return c.cost; if (c.type === "home" && isNum(settings.homePrice) && isNum(c.kwh)) return c.kwh * settings.homePrice; return null; }
-function sorted() { return [...charges].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.odo ?? 0) - (a.odo ?? 0) || (b.createdAt ?? 0) - (a.createdAt ?? 0)); }
+/* cars: settings.cars = [{id, name}]; a charge without a car belongs to the first car */
+const cars = () => Array.isArray(settings.cars) ? settings.cars.filter(c => c && c.id && c.name) : [];
+const multiCar = () => cars().length > 1;
+const firstCar = () => (cars()[0] || {}).id || null;
+const carOf = c => c.car || firstCar();
+const carName = id => (cars().find(c => c.id === id) || {}).name || "";
+function vc() { return carSel === "all" || !multiCar() ? charges : charges.filter(c => carOf(c) === carSel); }
+function byCar(list) { const g = {}; for (const c of list) (g[carOf(c) || "_"] ||= []).push(c); return Object.values(g); }
+const byOdo = list => list.filter(c => isNum(c.odo)).sort((a, b) => a.odo - b.odo || (a.date || "").localeCompare(b.date || ""));
+
+function sorted(list = vc()) { return [...list].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.odo ?? 0) - (a.odo ?? 0) || (b.createdAt ?? 0) - (a.createdAt ?? 0)); }
 function distSince() {
-  const w = charges.filter(c => isNum(c.odo)).sort((a, b) => a.odo - b.odo || (a.date || "").localeCompare(b.date || ""));
-  const m = {}; for (let i = 1; i < w.length; i++) m[w[i].id] = w[i].odo - w[i - 1].odo; return m;
+  const m = {};
+  for (const grp of byCar(charges)) { const w = byOdo(grp); for (let i = 1; i < w.length; i++) m[w[i].id] = w[i].odo - w[i - 1].odo; }
+  return m;
 }
+// Energy charged replaces what was used since the previous charge, so efficiency = kWh (after the first charge) / distance, per car.
 function efficiency(list) {
-  const w = list.filter(c => isNum(c.odo)).sort((a, b) => a.odo - b.odo || (a.date || "").localeCompare(b.date || ""));
-  if (w.length < 2) return null;
-  let kwh = 0, cost = 0; for (let i = 1; i < w.length; i++) { kwh += w[i].kwh || 0; cost += costOf(w[i]) || 0; }
-  const dist = w[w.length - 1].odo - w[0].odo; if (dist <= 0 || kwh <= 0) return null;
-  return { kwh, dist, cost };
+  let kwh = 0, cost = 0, dist = 0;
+  for (const grp of byCar(list)) {
+    const w = byOdo(grp); if (w.length < 2) continue;
+    const d = w[w.length - 1].odo - w[0].odo; if (d <= 0) continue;
+    for (let i = 1; i < w.length; i++) { kwh += w[i].kwh || 0; cost += costOf(w[i]) || 0; }
+    dist += d;
+  }
+  return dist > 0 && kwh > 0 ? { kwh, dist, cost } : null;
 }
+function mergeCars(a, b) { const out = [...(Array.isArray(a) ? a : [])]; for (const c of Array.isArray(b) ? b : []) if (c && c.id && !out.some(x => x.id === c.id)) out.push(c); return out; }
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "car";
 function sums(list) { let kwh = 0, cost = 0, kwhPriced = 0; for (const c of list) { kwh += c.kwh || 0; const k = costOf(c); if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; } } return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length }; }
 
 /* ---------- render ---------- */
-function renderAll() { renderHeader(); renderStats(); renderChart(); renderLegend(); renderList(); }
+function renderAll() { renderCarBar(); renderHeader(); renderStats(); renderChart(); renderLegend(); renderList(); }
+
+function renderCarBar() {
+  const bar = $("#carBar"); bar.hidden = !multiCar(); if (bar.hidden) return;
+  if (carSel !== "all" && !cars().some(c => c.id === carSel)) carSel = "all";
+  const opts = [...cars().map(c => [c.id, c.name]), ["all", "Both cars"]];
+  if (cars().length > 2) opts[opts.length - 1][1] = "All cars";
+  bar.innerHTML = opts.map(([id, name]) => `<button type="button" data-car="${esc(id)}" aria-pressed="${id === carSel}">${esc(name)}</button>`).join("");
+}
 
 function renderHeader() {
-  const s = sums(charges); const odos = charges.filter(c => isNum(c.odo)).map(c => c.odo);
-  const span = odos.length > 1 ? Math.max(...odos) - Math.min(...odos) : 0;
-  $("#subline").textContent = charges.length
+  const list = vc();
+  const s = sums(list); const dist = byCar(list).reduce((a, g) => { const w = byOdo(g); return a + (w.length > 1 ? w[w.length - 1].odo - w[0].odo : 0); }, 0);
+  const span = dist;
+  $("#subline").textContent = list.length
     ? `${nf(s.n)} charge${s.n === 1 ? "" : "s"} · ${nf(s.kwh)} kWh` + (span ? ` · ${nf(span)} ${distU()} logged` : "")
     : "Every charge, what it cost and how far it got you.";
 }
@@ -437,9 +481,10 @@ function renderStats() {
   const now = todayISO(), cur = ym(now);
   const d = new Date(now + "T00:00:00"); d.setDate(1); d.setMonth(d.getMonth() - 1);
   const prev = d.toISOString().slice(0, 7);
-  const m = sums(charges.filter(c => ym(c.date || "") === cur));
-  const p = sums(charges.filter(c => ym(c.date || "") === prev));
-  const all = sums(charges); const eff = efficiency(charges);
+  const list = vc();
+  const m = sums(list.filter(c => ym(c.date || "") === cur));
+  const p = sums(list.filter(c => ym(c.date || "") === prev));
+  const all = sums(list); const eff = efficiency(list);
   const mName = monthName(cur, { month: "long" });
   let effVal = "–", effUnit = "", effSub = "Needs two charges with odometer";
   if (eff) {
@@ -470,7 +515,7 @@ function renderChart() {
   const box = $("#chart");
   const months = last12();
   const val = c => metric === "cost" ? (costOf(c) || 0) : (c.kwh || 0);
-  const data = months.map(k => { const r = { k, home: 0, public: 0, fast: 0 }; for (const c of charges) if (ym(c.date || "") === k && r[c.type] !== undefined) r[c.type] += val(c); r.total = r.home + r.public + r.fast; return r; });
+  const data = months.map(k => { const r = { k, home: 0, public: 0, fast: 0 }; for (const c of vc()) if (ym(c.date || "") === k && r[c.type] !== undefined) r[c.type] += val(c); r.total = r.home + r.public + r.fast; return r; });
   const max = Math.max(0, ...data.map(r => r.total));
   if (!loaded || max === 0) {
     box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + (metric === "cost" ? "spend" : "energy") + " shows up here once charges are logged." : "Loading…"}</div>`;
@@ -503,9 +548,10 @@ function renderChart() {
 }
 
 function renderLegend() {
-  const total = charges.reduce((a, c) => a + (c.kwh || 0), 0);
+  const list = vc();
+  const total = list.reduce((a, c) => a + (c.kwh || 0), 0);
   $("#legend").innerHTML = Object.entries(TYPES).map(([t, T]) => {
-    const s = sums(charges.filter(c => c.type === t));
+    const s = sums(list.filter(c => c.type === t));
     const share = total > 0 ? Math.round(s.kwh / total * 100) : 0;
     return `<div class="leg"><i class="sw" style="background:var(--${t})"></i><div><b>${T.label}</b><span>${s.n ? `${share}% of energy · ${money(s.avg, 3)}/kWh` : "No charges yet"}</span></div></div>`;
   }).join("");
@@ -520,7 +566,7 @@ function battHTML(s0, s1) {
 function rowHTML(c, dist, ro) {
   const T = TYPES[c.type] || TYPES.public; const cost = costOf(c);
   const ppk = isNum(cost) && c.kwh > 0 ? cost / c.kwh : null;
-  const meta = [isNum(c.odo) ? `${nf(c.odo)} ${distU()}` : null, isNum(dist) && dist > 0 ? `+${nf(dist)} ${distU()}` : null].filter(Boolean).join(" · ");
+  const meta = [multiCar() && carSel === "all" ? carName(carOf(c)) : null, isNum(c.odo) ? `${nf(c.odo)} ${distU()}` : null, isNum(dist) && dist > 0 ? `+${nf(dist)} ${distU()}` : null].filter(Boolean).join(" · ");
   return `<button type="button" class="row${ro ? " ro" : ""}" data-id="${esc(c.id)}"${ro ? ' tabindex="-1"' : ""}>
     <span class="ico t-${c.type}">${T.icon}</span>
     <span class="main">
@@ -545,7 +591,7 @@ function renderList() {
     return;
   }
   const ds = distSince(); const rows = sorted().filter(c => filter === "all" || c.type === filter);
-  if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${esc(TYPES[filter].label.toLowerCase())} charges logged yet.</p></div>`; return; }
+  if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${filter === "all" ? "" : esc(TYPES[filter].label.toLowerCase()) + " "}charges logged${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""} yet.</p></div>`; return; }
   let html = "", curM = null;
   const groups = {}; rows.forEach(c => (groups[ym(c.date || "")] ||= []).push(c));
   for (const c of rows) {
@@ -577,12 +623,15 @@ function openForm(c) {
   editingId = c ? c.id : null;
   $("#formTitle").textContent = c ? "Edit charge" : "Log a charge";
   $("#saveBtn").textContent = c ? "Save changes" : "Save charge";
-  const last = sorted()[0];
+  const car = c ? carOf(c) : (carSel !== "all" && multiCar() ? carSel : carOf(sorted(charges)[0] || {}));
+  const pick = $("#carPick"); pick.hidden = !multiCar();
+  pick.innerHTML = cars().map(x => `<label><input type="radio" name="car" value="${esc(x.id)}"${x.id === car ? " checked" : ""}><span>${esc(x.name)}</span></label>`).join("");
+  const last = sorted(charges.filter(x => carOf(x) === car))[0] || sorted(charges)[0];
   const type = c ? c.type : (last ? last.type : "home");
   (document.getElementById("ty-" + type) || $("#ty-home")).checked = true;
   F.date.value = c ? (c.date || "") : todayISO();
   F.odo.value = c && isNum(c.odo) ? c.odo : "";
-  F.odo.placeholder = last && isNum(last.odo) ? `last: ${nf(last.odo)}` : "";
+  setOdoHint();
   F.kwh.value = c && isNum(c.kwh) ? c.kwh : "";
   F.cost.value = c && isNum(c.cost) ? c.cost : "";
   F.s0.value = c && isNum(c.socStart) ? c.socStart : "";
@@ -607,6 +656,13 @@ function updatePreview() {
   const bar = battHTML(s0, s1) || `<span class="battline"><span class="batt"><i class="b0" style="width:0"></i></span><span class="pct">battery % optional</span></span>`;
   $("#preview").innerHTML = bar + `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`;
 }
+const formCar = () => (document.querySelector('input[name="car"]:checked') || {}).value || firstCar();
+function setOdoHint() {
+  const car = formCar(); const w = byOdo(charges.filter(x => carOf(x) === car && x.id !== editingId));
+  const last = w[w.length - 1];
+  F.odo.placeholder = last ? `last: ${nf(last.odo)}` : "";
+}
+$("#carPick").addEventListener("change", setOdoHint);
 Object.values(F).forEach(i => i.addEventListener("input", updatePreview));
 document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener("change", updatePreview));
 
@@ -622,7 +678,7 @@ $("#chargeForm").addEventListener("submit", async e => {
   if ((isNum(s0) && s0 > 100) || (isNum(s1) && s1 > 100)) return err("Battery levels go from 0 to 100%.");
   if (isNum(s0) && isNum(s1) && s1 < s0) return err("Battery after should be higher than battery before.");
   const type = formType();
-  const data = { date, type, kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
+  const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
     odo, socStart: s0, socEnd: s1, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   if (data.cost == null && type === "home" && isNum(settings.homePrice)) data.cost = Math.round(kwh * settings.homePrice * 100) / 100;
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
@@ -656,13 +712,25 @@ $("#delBtn").addEventListener("click", async () => {
 function openSettings() {
   $("#s-cur").value = settings.currency; $("#s-unit").value = settings.unit;
   $("#s-home").value = isNum(settings.homePrice) ? settings.homePrice : "";
+  $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
+    `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
+  $("#carNames").querySelectorAll("input").forEach(i => i.className = "");
   openSheet("#setScrim");
+}
+function readCars() {
+  const out = [];
+  for (const i of $("#carNames").querySelectorAll("input")) {
+    const name = i.value.trim(), id = i.dataset.id;
+    if (id) out.push({ id, name: name || carName(id) });           // existing cars can be renamed, not removed
+    else if (name) { let nid = slug(name), n = 2; while (out.some(c => c.id === nid) || cars().some(c => c.id === nid)) nid = slug(name) + "-" + n++; out.push({ id: nid, name }); }
+  }
+  return out;
 }
 $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
   const hp = parseDec($("#s-home").value);
   if (Number.isNaN(hp)) { toast("Home price should be a number, for example 0.25"); return; }
-  const next = { currency: $("#s-cur").value, unit: $("#s-unit").value, homePrice: isNum(hp) ? hp : null };
+  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrice: isNum(hp) ? hp : null, cars: readCars() };
   run(() => db.doc("settings/main").set(next), "Settings didn't save");
   if (db === Store) settings = { ...DEFAULTS, ...next };
   closeSheet("#setScrim"); toast("Settings saved");
@@ -680,6 +748,11 @@ function applyUnits() {
   document.querySelectorAll(".u-curkwh").forEach(e => e.textContent = curSymbol() + "/kWh");
 }
 $("#addBtn").addEventListener("click", () => openForm(null));
+$("#carBar").addEventListener("click", e => {
+  const b = e.target.closest("button[data-car]"); if (!b) return;
+  carSel = b.dataset.car; try { localStorage.setItem("chargelog.car", carSel); } catch {}
+  renderAll();
+});
 $("#settingsBtn").addEventListener("click", openSettings);
 $("#list").addEventListener("click", e => {
   const r = e.target.closest(".row"); if (!r || !canWrite || r.dataset.id === "demo") return;
@@ -712,14 +785,16 @@ $("#importFile").addEventListener("change", async e => {
     const added = j.charges.filter(c => c && c.id && c.date && !have.has(c.id)).length;
     const msg = `Backup loaded · ${added} new charge${added === 1 ? "" : "s"}`;
     closeSheet("#setScrim");
+    // Cars from the file are added to the cars already here; other settings in the file win.
+    const merged = { ...settings, ...(j.settings || {}), cars: mergeCars(settings.cars, j.settings && j.settings.cars) };
     if (db === Store) {
       const byId = new Map(charges.map(c => [c.id, c]));
       for (const c of j.charges) if (c && c.id && c.date) byId.set(c.id, c);
-      Store.replaceAll([...byId.values()], j.settings ? { ...settings, ...j.settings } : settings);
+      Store.replaceAll([...byId.values()], merged);
       toast(msg);
     } else {
       toast("Loading backup…");
-      window.Cloud.merge(j.charges, j.settings).then(() => toast(msg), () => toast("The backup didn't load. Check the connection and try again."));
+      window.Cloud.merge(j.charges, null).then(() => db.doc("settings/main").set(merged)).then(() => toast(msg), () => toast("The backup didn't load. Check the connection and try again."));
     }
   } catch { toast("That file isn't a Charge Log backup."); }
 });
