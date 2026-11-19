@@ -156,7 +156,32 @@ button{font:inherit;color:inherit}
 .s-s0{stroke:var(--s0);fill:var(--s0)} .s-s1{stroke:var(--s1);fill:var(--s1)} .s-s2{stroke:var(--s2);fill:var(--s2)}
 #chart .area{fill-opacity:.16;stroke:none}
 #chart .ln{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
-#chart .dot{stroke:var(--surface);stroke-width:1.5}
+#chart .dot{stroke:var(--surface);stroke-width:1.5;transition:r .12s}
+/* hover card + highlight */
+.chartwrap{position:relative}
+#chart .hit{cursor:pointer}
+#chart .band{fill:var(--accent);opacity:0;transition:opacity .15s,x .15s}
+#chart .band.on{opacity:.09}
+#chart svg [data-m]{transition:opacity .15s}
+#chart svg.hl rect[data-m]:not(.on){opacity:.32}
+#chart svg.hl .dot.on{r:6px}
+#chart svg.hl text.on{fill:var(--ink);font-weight:600}
+.tip{position:absolute;z-index:6;pointer-events:none;width:max-content;min-width:180px;max-width:min(260px,100%);
+  background:var(--feature-bg);color:var(--feature-ink);border-radius:16px;padding:14px 16px 12px;
+  box-shadow:0 14px 36px rgba(4,14,22,.35),0 2px 6px rgba(4,14,22,.2);animation:tipin .14s ease-out}
+@keyframes tipin{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
+.tip .t-head{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--feature-muted)}
+.tip .t-big{font-family:var(--display);font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:4px;font-variant-numeric:tabular-nums}
+.tip .t-sub{font-size:12px;color:var(--feature-muted);margin-top:-1px}
+.tip .t-rows{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.tip .t-row{display:grid;grid-template-columns:10px 1fr auto auto;align-items:center;column-gap:8px;font-size:13px;position:relative;padding-bottom:5px}
+.tip .t-row .sw{width:10px;height:10px;border-radius:3px;display:block}
+.tip .t-row b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.tip .t-row em{font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--feature-muted);min-width:32px;text-align:right}
+.tip .t-row s{position:absolute;left:18px;bottom:0;height:2px;width:calc((100% - 18px) * var(--w) / 100);border-radius:2px;text-decoration:none;opacity:.9}
+.tip .t-foot{margin-top:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--feature-ink) 14%,transparent);font-size:12px;color:var(--feature-muted);line-height:1.5}
+.tip .t-foot b{color:var(--feature-ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){.tip{animation:none}#chart .band,#chart svg [data-m]{transition:none}}
 .bg-home{background:var(--home)} .bg-public{background:var(--public)} .bg-fast{background:var(--fast)}
 .bg-s0{background:var(--s0)} .bg-s1{background:var(--s1)} .bg-s2{background:var(--s2)}
 .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
@@ -302,7 +327,7 @@ button{font:inherit;color:inherit}
     </div>
     <div class="yearsum" id="yearSum"></div>
     <div class="chartkey" id="chartKey" hidden></div>
-    <div id="chart"></div>
+    <div class="chartwrap"><div id="chart"></div><div class="tip" id="tip" role="status" hidden></div></div>
     <div class="legend" id="legend"></div>
   </section>
 
@@ -476,6 +501,7 @@ const Store = {
 try { const t = "__t"; localStorage.setItem(t, "1"); localStorage.removeItem(t); } catch { Store.ok = false; }
 let charges = [], settings = { ...DEFAULTS };
 let filter = "all", metric = "cost", editingId = null;
+let previewStyle = null;   // chart style being previewed in Settings, until saved or cancelled
 let carSel = (() => { try { return localStorage.getItem("chargelog.car") || "all"; } catch { return "all"; } })();
 let yearSel = (() => { try { return localStorage.getItem("chargelog.year") || ""; } catch { return ""; } })();
 
@@ -622,7 +648,7 @@ function fmtMetric(v, short) {
 // per car when several cars are shown together, otherwise one total.
 function chartSeries(styleOverride) {
   const months = Array.from({ length: 12 }, (_, i) => `${yearSel}-${String(i + 1).padStart(2, "0")}`);
-  const style = (typeof styleOverride === "string" && styleOverride) || settings.chartStyle || "bars";
+  const style = (typeof styleOverride === "string" && styleOverride) || previewStyle || settings.chartStyle || "bars";
   const ds = metric === "dist" ? distSince() : null;
   const val = c => metric === "cost" ? (costOf(c) || 0) : metric === "kwh" ? (c.kwh || 0) : Math.max(0, ds[c.id] || 0);
   let groups, pick;
@@ -655,6 +681,7 @@ function renderChart(styleOverride) {
   key.hidden = stacked && metric !== "dist" || groups.length < 2;
   key.innerHTML = groups.map(g => `<span><i class="sw bg-${g.cls}"></i>${esc(g.label)}</span>`).join("");
   if (!loaded || max === 0) {
+    chartState = null; hideTip();
     box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + METRICS[metric] + " for " + yearSel + " shows up here once charges are logged." : "Loading…"}</div>`;
     return;
   }
@@ -668,6 +695,8 @@ function renderChart(styleOverride) {
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, ${yearSel}">`;
   for (let v = 0; v <= top + 1e-9; v += step) { const yy = y(v).toFixed(1); s += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}"/><text x="${pad.l - 8}" y="${+yy + 4}" text-anchor="end">${fmtMetric(v, step < 1 ? "fine" : true)}</text>`; }
   const cur = ym(todayISO()); const narrow = W < 460;
+  // soft column behind the hovered month (moved by showTip)
+  s += `<rect id="band" class="band" x="0" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih}" rx="8"/>`;
 
   if (stacked) {
     months.forEach((k, i) => {
@@ -675,7 +704,7 @@ function renderChart(styleOverride) {
       for (const g of groups) {
         if (g.v[i] <= 0) continue;
         const y0 = y(acc), y1 = y(acc + g.v[i]); acc += g.v[i];
-        s += `<rect class="f-${g.cls}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2"/>`;
+        s += `<rect class="f-${g.cls}" data-m="${i}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2"/>`;
       }
     });
   } else {
@@ -687,17 +716,75 @@ function renderChart(styleOverride) {
       if (style === "area" || style === "cumulative")
         s += `<polygon class="area f-${g.cls}" points="${pts[0][0].toFixed(1)},${y(0).toFixed(1)} ${line} ${pts[pts.length - 1][0].toFixed(1)},${y(0).toFixed(1)}"/>`;
       s += `<polyline class="ln s-${g.cls}" points="${line}"/>`;
-      pts.forEach((p, j) => { if (g.v[p[2]] > 0 || style === "cumulative") s += `<circle class="dot s-${g.cls}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${j === pts.length - 1 ? 4 : 2.6}"/>`; });
+      pts.forEach((p, j) => { if (g.v[p[2]] > 0 || style === "cumulative") s += `<circle class="dot s-${g.cls}" data-m="${p[2]}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${j === pts.length - 1 ? 4 : 2.6}"/>`; });
     }
   }
-  // hover targets with the month's numbers
+  // hover/tap targets: one per month, full height (the card is drawn by showTip)
   months.forEach((k, i) => {
-    const parts = groups.filter(g => g.v[i] > 0).map(g => `${g.label}: ${fmtMetric(g.v[i])}`);
-    const tip = `${monthName(k)}${style === "cumulative" ? " (so far)" : ""}` + (parts.length ? "\n" + parts.join("\n") : ": none") + (groups.length > 1 && parts.length > 1 ? `\nTotal: ${fmtMetric(totals[i])}` : "");
-    s += `<rect x="${(pad.l + slot * i).toFixed(1)}" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih}" fill="transparent"><title>${esc(tip)}</title></rect>`;
-    s += `<text x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"${k === cur ? ' class="cur"' : ""}>${esc(monthName(k, { month: narrow ? "narrow" : "short" }))}</text>`;
+    s += `<rect class="hit" data-i="${i}" x="${(pad.l + slot * i).toFixed(1)}" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih + pad.b}" fill="transparent"/>`;
+    s += `<text data-lbl="${i}" x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"${k === cur ? ' class="cur"' : ""}>${esc(monthName(k, { month: narrow ? "narrow" : "short" }))}</text>`;
   });
   box.innerHTML = s + "</svg>";
+  chartState = { months, groups, totals, style, W, slot, pad, cx };
+  hideTip();
+}
+
+/* ---------- chart hover card ---------- */
+let chartState = null, tipIdx = -1;
+function monthStats(k) {
+  const list = vc().filter(c => ym(c.date || "") === k); const ds = distSince();
+  let dist = 0; for (const c of list) if (isNum(ds[c.id]) && ds[c.id] > 0) dist += ds[c.id];
+  return { ...sums(list), dist };
+}
+function showTip(i) {
+  const st = chartState; if (!st || i < 0 || i > 11) return;
+  const svg = $("#chart svg"); if (!svg) return;
+  tipIdx = i;
+  const k = st.months[i], ms = monthStats(k), cum = st.style === "cumulative";
+  const rows = st.groups.filter(g => g.v[i] > 0);
+  const showRows = st.groups.length > 1 && rows.length > 0;
+  const head = cum ? `${monthName(k, { month: "long" })} · year so far` : monthName(k);
+  const bigLabel = cum ? `${METRICS[metric]} so far` : METRICS[metric];
+  const foot = ms.n
+    ? [`<b>${nf(ms.n)}</b> charge${ms.n === 1 ? "" : "s"}`,
+       (cum || metric !== "kwh") ? `<b>${nf(ms.kwh, 0)}</b> kWh` : "",
+       (cum || metric !== "cost") ? `<b>${money(ms.cost)}</b>` : "",
+       ms.dist && (cum || metric !== "dist") ? `<b>${nf(ms.dist)}</b> ${distU()}` : ""].filter(Boolean).join(" · ")
+    : "No charges this month";
+  const tip = $("#tip");
+  tip.innerHTML = `<div class="t-head">${esc(head)}</div>
+    <div class="t-big">${st.totals[i] > 0 ? fmtMetric(st.totals[i]) : "–"}</div><div class="t-sub">${esc(bigLabel)}</div>
+    ${showRows ? `<div class="t-rows">${rows.map(g => {
+      const pct = st.totals[i] > 0 ? Math.round(g.v[i] / st.totals[i] * 100) : 0;
+      return `<div class="t-row"><i class="sw bg-${g.cls}"></i><span>${esc(g.label)}</span><b>${fmtMetric(g.v[i])}</b><em>${pct}%</em><s style="--w:${pct}%" class="bg-${g.cls}"></s></div>`;
+    }).join("")}</div>` : ""}
+    <div class="t-foot">${cum ? "In " + esc(monthName(k, { month: "long" })) + ": " : ""}${foot}</div>`;
+  tip.hidden = false;
+  // highlight the month: band behind it, everything else fades
+  svg.classList.add("hl");
+  svg.querySelectorAll("[data-m]").forEach(el => el.classList.toggle("on", +el.dataset.m === i));
+  svg.querySelectorAll("[data-lbl]").forEach(el => el.classList.toggle("on", +el.dataset.lbl === i));
+  const band = svg.querySelector("#band"); band.setAttribute("x", (st.pad.l + st.slot * i).toFixed(1)); band.classList.add("on");
+  // place the card beside the column, flipping to the other side near the right edge
+  const boxW = $("#chart").clientWidth, tw = tip.offsetWidth, th = tip.offsetHeight, x = st.cx(i);
+  let left = x + st.slot / 2 + 10;
+  if (left + tw > boxW) left = x - st.slot / 2 - 10 - tw;
+  if (left < 0) left = Math.max(0, Math.min(boxW - tw, x - tw / 2));
+  tip.style.left = left + "px";
+  tip.style.top = Math.max(0, Math.min(st.pad.t, $("#chart").clientHeight - th)) + "px";
+}
+function hideTip() {
+  tipIdx = -1; const tip = $("#tip"); if (tip) tip.hidden = true;
+  const svg = $("#chart svg"); if (!svg) return;
+  svg.classList.remove("hl"); const band = svg.querySelector("#band"); if (band) band.classList.remove("on");
+}
+{
+  const ch = $("#chart");
+  const at = e => { const h = e.target.closest && e.target.closest(".hit"); return h ? +h.dataset.i : -1; };
+  ch.addEventListener("pointermove", e => { const i = at(e); if (i >= 0 && i !== tipIdx) showTip(i); });
+  ch.addEventListener("pointerdown", e => { const i = at(e); if (i < 0) return; if (i === tipIdx && e.pointerType !== "mouse") hideTip(); else showTip(i); });
+  ch.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hideTip(); });
+  document.addEventListener("pointerdown", e => { if (!ch.contains(e.target)) hideTip(); });
 }
 
 function renderLegend() {
@@ -764,7 +851,7 @@ let lastFocus = null;
 function openSheet(id) { lastFocus = document.activeElement; $(id).hidden = false; }
 function closeSheet(id) {
   $(id).hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus();
-  if (id === "#setScrim") { applyAppearance(); renderChart(); }   // undo any unsaved preview
+  if (id === "#setScrim") { previewStyle = null; applyAppearance(); renderChart(); }   // undo any unsaved preview
 }
 document.querySelectorAll(".scrim").forEach(s => {
   s.addEventListener("click", e => { if (e.target === s || e.target.closest("[data-close]")) closeSheet("#" + s.id); });
@@ -877,7 +964,7 @@ const appearanceFromForm = () => ({
 });
 // Theme, colour and chart style preview straight away; closing Settings without saving puts them back.
 $("#setForm").addEventListener("change", e => {
-  if (["theme", "accent", "chartStyle"].includes(e.target.name)) { const a = appearanceFromForm(); applyAppearance(a); renderChart(a.chartStyle); }
+  if (["theme", "accent", "chartStyle"].includes(e.target.name)) { const a = appearanceFromForm(); previewStyle = a.chartStyle; applyAppearance(a); renderChart(); }
 });
 function applyAppearance(a = settings) {
   const r = document.documentElement;
