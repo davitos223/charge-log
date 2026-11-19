@@ -19,8 +19,8 @@ Record each charge in a few taps and see what you spend, how much energy you use
 - **Home, Public, Fast DC and Work** charger types, each with its own colour
 - **Several cars**: switch between cars or see them together
 - **Year view**: pick a year and the chart, totals and charge list follow
-- **Charts**: spend, energy, distance and efficiency per month as bars, lines, area or a running total
-- **Tap or hover a month** for a breakdown card
+- **Charts**: spend, energy, distance and efficiency per month as stacked bars, side by side, share of each month, horizontal bars or a running total, with the monthly average marked
+- **Month details**: tap a month for its full page, with comparisons to the month before and the same month last year, the split by charger type and car, the work claim and every charge
 - **Efficiency per car** (kWh/100 km) to see seasonal changes and spot missed entries
 - **Work claims**: monthly totals of work charging, ticked off once paid back
 - **Home electricity price history**: a new price from a chosen month onwards, with each charge priced by its own date
