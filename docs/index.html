@@ -188,6 +188,57 @@ button{font:inherit;color:inherit}
 .f-s0{fill:var(--s0)} .f-s1{fill:var(--s1)} .f-s2{fill:var(--s2)}
 .s-s0{stroke:var(--s0);fill:var(--s0)} .s-s1{stroke:var(--s1);fill:var(--s1)} .s-s2{stroke:var(--s2);fill:var(--s2)}
 #chart .area{fill-opacity:.16;stroke:none}
+#chart .bar,#chart .hbar,#chart .val{transition:opacity .15s}
+#chart .track{fill:var(--surface-2)}
+#chart .val{fill:var(--muted);font-size:10.5px;font-weight:500}
+#chart .avg{stroke:var(--ink);stroke-opacity:.42;stroke-width:1.2;stroke-dasharray:4 4}
+#chart .avg-t{fill:var(--muted);font-size:10.5px;font-weight:500}
+#chart .hit{outline:none}
+#chart svg.grow .bar{animation:barUp .6s cubic-bezier(.2,.85,.25,1) both;transform-box:fill-box;transform-origin:50% 100%}
+#chart svg.grow .hbar{animation:barRight .6s cubic-bezier(.2,.85,.25,1) both;transform-box:fill-box;transform-origin:0 50%}
+#chart svg.grow .area,#chart svg.grow .ln,#chart svg.grow .dot,#chart svg.grow .val,#chart svg.grow .avg,#chart svg.grow .avg-t{animation:fadeIn .6s ease both}
+@keyframes barUp{from{transform:scaleY(0)}to{transform:none}}
+@keyframes barRight{from{transform:scaleX(0)}to{transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){#chart svg.grow *{animation:none!important}}
+.tip .t-hint{margin-top:8px;font-size:11px;color:var(--feature-muted);opacity:.8}
+/* month details page */
+.month-sheet{max-width:680px;gap:16px}
+@media (max-width:639px){.month-sheet{max-height:94%}}
+.m-head{gap:6px}
+.m-title{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column}
+.m-title h2{font-size:21px}
+.m-title span{font-size:12.5px;color:var(--muted)}
+.m-head .icon-btn:disabled{opacity:.35;cursor:default}
+.m-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.m-tile{background:var(--surface-2);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.m-tile .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.m-tile b{font-family:var(--display);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-tile.big{background:var(--feature-bg);color:var(--feature-ink)}
+.m-tile.big .lbl,.m-tile.big .dl{color:var(--feature-muted)}
+.m-tile.big b{font-size:24px}
+.m-tile .dl{font-size:12px;color:var(--muted)}
+.m-tile b small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--muted);margin-left:3px}
+.m-tile.big b small{color:var(--feature-muted)}
+.d{font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.d.good{color:var(--charge)} .d.bad{color:var(--fast)} .d.flat{color:var(--ink)}
+.m-tile.big .d.flat{color:var(--feature-ink)}
+@media (max-width:520px){.m-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.m-tile.big{grid-column:1/-1}}
+.m-sec{display:flex;flex-direction:column;gap:10px}
+.m-sec h3{font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.m-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px}
+.m-bar i{display:block;min-width:3px}
+.m-rows{display:flex;flex-direction:column}
+.m-row{display:grid;grid-template-columns:10px minmax(0,auto) minmax(0,1fr) auto 40px;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.m-row:last-child{border-bottom:0}
+.m-row .sw{width:10px;height:10px;border-radius:3px;display:block}
+.m-row span{font-weight:600;white-space:nowrap}
+.m-row em{font-style:normal;font-size:12.5px;color:var(--muted);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-row b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.m-row small{font-size:12px;color:var(--muted);text-align:right;font-family:var(--mono)}
+@media (max-width:520px){.m-row{grid-template-columns:10px auto auto 34px;row-gap:2px}.m-row em{grid-column:2/-1;grid-row:2}}
+.m-list .row:last-child{border-bottom:0}
+.m-sec .claim{padding:4px 2px}
 #chart .ln{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
 #chart .dot{stroke:var(--surface);stroke-width:1.5;transition:r .12s}
 /* hover card + highlight */
@@ -196,7 +247,7 @@ button{font:inherit;color:inherit}
 #chart .band{fill:var(--accent);opacity:0;transition:opacity .15s,x .15s}
 #chart .band.on{opacity:.09}
 #chart svg [data-m]{transition:opacity .15s}
-#chart svg.hl rect[data-m]:not(.on){opacity:.32}
+#chart svg.hl .bar:not(.on),#chart svg.hl .hbar:not(.on),#chart svg.hl .val:not(.on){opacity:.3}
 #chart svg.hl .dot.on{r:6px}
 #chart svg.hl text.on{fill:var(--ink);font-weight:600}
 .tip{position:absolute;z-index:6;pointer-events:none;width:max-content;min-width:180px;max-width:min(260px,100%);
@@ -224,7 +275,7 @@ button{font:inherit;color:inherit}
 .opts input:checked + span{border-color:var(--accent);background:var(--accent-soft)}
 .opts input:focus-visible + span,.swatches input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .swatches{display:flex;gap:14px;flex-wrap:wrap}
-@media (max-width:460px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.opts.four{grid-template-columns:repeat(2,minmax(0,1fr))}.opts.five{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .swatches label{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
 .swatches span{width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--line)}
 .swatches input:checked + span{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--ink)}
@@ -472,13 +523,14 @@ button{font:inherit;color:inherit}
       </div>
     </div>
     <div class="fld"><span>Chart style</span>
-      <div class="opts four" role="radiogroup" aria-label="Chart style">
+      <div class="opts five" role="radiogroup" aria-label="Chart style">
         <label><input type="radio" name="chartStyle" value="bars" id="cs-bars"><span>Bars</span></label>
-        <label><input type="radio" name="chartStyle" value="lines" id="cs-lines"><span>Lines</span></label>
-        <label><input type="radio" name="chartStyle" value="area" id="cs-area"><span>Area</span></label>
+        <label><input type="radio" name="chartStyle" value="grouped" id="cs-grouped"><span>Side by side</span></label>
+        <label><input type="radio" name="chartStyle" value="share" id="cs-share"><span>Share</span></label>
+        <label><input type="radio" name="chartStyle" value="horizontal" id="cs-horizontal"><span>Horizontal</span></label>
         <label><input type="radio" name="chartStyle" value="cumulative" id="cs-cumulative"><span>Running total</span></label>
       </div>
-      <p class="hint">Running total adds each month to the last, so you can see the year build up, like the Charts tab in the spreadsheet.</p>
+      <p class="hint"><b>Side by side</b> puts each type next to the other, <b>Share</b> shows each month as 100%, and <b>Running total</b> adds each month to the last, like the Charts tab in the spreadsheet.</p>
     </div>
     <div class="fld"><span>Cars</span>
       <div class="carnames" id="carNames"></div>
@@ -518,14 +570,27 @@ button{font:inherit;color:inherit}
   </form>
 </div>
 
+<!-- Month details -->
+<div class="scrim" id="monthScrim" hidden>
+  <div class="sheet month-sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="sheet-head m-head">
+      <button type="button" class="icon-btn" id="mPrev" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+      <div class="m-title"><h2 id="mTitle"></h2><span id="mScope"></span></div>
+      <button type="button" class="icon-btn" id="mNext" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+      <button type="button" class="icon-btn" id="mClose" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="config.js?v=20261119b"></script>
+<script src="config.js?v=20261119c"></script>
 
 <script>
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const APP_VERSION = "20261119b";   // keep in step with the ?v= on config.js and cloud.js
+const APP_VERSION = "20261119c";   // keep in step with the ?v= on config.js and cloud.js
 const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
 try { const l = JSON.parse(localStorage.getItem("chargelog.look") || "{}"); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
@@ -633,7 +698,7 @@ const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^
 function sums(list) { let kwh = 0, cost = 0, kwhPriced = 0; for (const c of list) { kwh += c.kwh || 0; const k = costOf(c); if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; } } return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length }; }
 
 /* ---------- render ---------- */
-function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderClaims(); renderList(); }
+function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderClaims(); renderList(); if (monthKey && !$("#monthScrim").hidden) renderMonth(); }
 
 /* year view: the chart, its totals, the legend and the charge list all show one calendar year */
 const thisYear = () => todayISO().slice(0, 4);
@@ -745,15 +810,19 @@ function effSeries(months) {
   return groups;
 }
 
+const STYLES = ["bars", "grouped", "share", "horizontal", "cumulative"];
+const chartStyleNow = o => { const s = (typeof o === "string" && o) || previewStyle || settings.chartStyle || "bars"; return STYLES.includes(s) ? s : "bars"; };   // old Lines/Area choices become Bars
+
 function chartSeries(styleOverride) {
   const months = Array.from({ length: 12 }, (_, i) => `${yearSel}-${String(i + 1).padStart(2, "0")}`);
-  const lastIdx0 = yearSel === thisYear() ? Number(todayISO().slice(5, 7)) - 1 : 11;
-  if (metric === "eff") return { months, groups: effSeries(months), style: "lines", lastIdx: lastIdx0, eff: true };
-  const style = (typeof styleOverride === "string" && styleOverride) || previewStyle || settings.chartStyle || "bars";
+  const lastIdx = yearSel === thisYear() ? Number(todayISO().slice(5, 7)) - 1 : 11;
+  const style = chartStyleNow(styleOverride);
+  // efficiency is a rate, so it's never stacked or added up: always one bar per car
+  if (metric === "eff") return { months, groups: effSeries(months), style: "grouped", lastIdx, eff: true };
   const ds = metric === "dist" ? distSince() : null;
   const val = c => metric === "cost" ? (costOf(c) || 0) : metric === "kwh" ? (c.kwh || 0) : Math.max(0, ds[c.id] || 0);
   let groups, pick;
-  if (style === "bars" && metric !== "dist") {
+  if (metric !== "dist" && style !== "cumulative") {
     groups = Object.entries(TYPES).map(([k, T]) => ({ key: k, label: T.label, cls: k })); pick = c => c.type;
   } else if (multiCar() && carSel === "all") {
     groups = cars().map((c, i) => ({ key: c.id, label: c.name, cls: "s" + (i % 3) })); pick = carOf;
@@ -766,69 +835,118 @@ function chartSeries(styleOverride) {
     const i = idx[ym(c.date || "")]; if (i === undefined) continue;
     const g = groups.find(x => x.key === pick(c)); if (g) g.v[i] += val(c);
   }
+  if (style === "grouped") { const used = groups.filter(g => g.v.some(v => v > 0)); if (used.length) groups = used; }
   if (style === "cumulative") for (const g of groups) for (let i = 1; i < 12; i++) g.v[i] += g.v[i - 1];
-  // in the current year, lines stop at this month instead of dropping to zero
-  const lastIdx = yearSel === thisYear() ? Number(todayISO().slice(5, 7)) - 1 : 11;
   return { months, groups, style, lastIdx };
 }
 
+// a bar with rounded top corners (or right-hand corners for horizontal bars)
+function barPath(x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h)); return `M${x.toFixed(1)},${(y + h).toFixed(1)}V${(y + r).toFixed(1)}Q${x.toFixed(1)},${y.toFixed(1)} ${(x + r).toFixed(1)},${y.toFixed(1)}H${(x + w - r).toFixed(1)}Q${(x + w).toFixed(1)},${y.toFixed(1)} ${(x + w).toFixed(1)},${(y + r).toFixed(1)}V${(y + h).toFixed(1)}Z`; }
+function hbarPath(x, y, w, h, r) { r = Math.max(0, Math.min(r, h / 2, w)); return `M${x.toFixed(1)},${y.toFixed(1)}H${(x + w - r).toFixed(1)}Q${(x + w).toFixed(1)},${y.toFixed(1)} ${(x + w).toFixed(1)},${(y + r).toFixed(1)}V${(y + h - r).toFixed(1)}Q${(x + w).toFixed(1)},${(y + h).toFixed(1)} ${(x + w - r).toFixed(1)},${(y + h).toFixed(1)}H${x.toFixed(1)}Z`; }
+
+let animKey = "";
 function renderChart(styleOverride) {
   const box = $("#chart");
   const { months, groups, style, lastIdx, eff } = chartSeries(styleOverride);
-  const stacked = style === "bars";
   const totals = eff
     ? months.map((_, i) => effOf(groups.reduce((a, g) => a + g.num[i], 0), groups.reduce((a, g) => a + g.den[i], 0)))
     : months.map((_, i) => groups.reduce((a, g) => a + g.v[i], 0));
-  const max = stacked ? Math.max(0, ...totals) : Math.max(0, ...groups.flatMap(g => g.v));
   const key = $("#chartKey");
-  key.hidden = stacked && metric !== "dist" || groups.length < 2;
+  key.hidden = groups.length < 2 || groups.every(g => TYPES[g.key]);   // charger types are explained by the legend below
   key.innerHTML = groups.map(g => `<span><i class="sw bg-${g.cls}"></i>${esc(g.label)}</span>`).join("");
-  if (!loaded || max === 0) {
+  if (!loaded || !groups.some(g => g.v.some(v => v > 0))) {
     chartState = null; hideTip();
     box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + METRICS[metric] + " for " + yearSel + " shows up here once charges are logged." : "Loading…"}</div>`;
     return;
   }
-  const W = Math.max(300, Math.round(box.clientWidth || 600)), H = 230;
-  const pad = { l: 50, r: 10, t: 12, b: 26 };
-  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
-  const step = niceStep(max / 4), top = Math.ceil(max / step) * step;
-  const y = v => pad.t + ih - (v / top) * ih;
-  const slot = iw / 12, bw = Math.min(34, slot * 0.62), cx = i => pad.l + slot * i + slot / 2;
-  const label = (style === "cumulative" ? "Running total of " : "Monthly ") + METRICS[metric];
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, ${yearSel}">`;
-  for (let v = 0; v <= top + 1e-9; v += step) { const yy = y(v).toFixed(1); s += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}"/><text x="${pad.l - 8}" y="${+yy + 4}" text-anchor="end">${fmtMetric(v, step < 1 ? "fine" : true)}</text>`; }
-  const cur = ym(todayISO()); const narrow = W < 460;
-  // soft column behind the hovered month (moved by showTip)
-  s += `<rect id="band" class="band" x="0" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih}" rx="8"/>`;
+  // replay the grow-in only when what's shown changes, not on every sync update
+  const ak = [metric, style, yearSel, carSel].join("|"); const grow = ak !== animKey; animKey = ak;
+  const W = Math.max(300, Math.round(box.clientWidth || 600)), cur = ym(todayISO()), narrow = W < 460;
+  const withData = totals.slice(0, lastIdx + 1).filter(v => v > 0);
+  const avg = withData.length ? withData.reduce((a, v) => a + v, 0) / withData.length : 0;
+  const label = (style === "cumulative" ? "Running total of " : style === "share" ? "Share of " : "Monthly ") + METRICS[metric];
+  let s;
 
-  if (stacked) {
+  if (style === "horizontal") {
+    // months as rows, value at the end of each bar
+    const rowH = narrow ? 25 : 27, padL = 44, padR = narrow ? 62 : 74, padT = 4, H = padT * 2 + rowH * 12;
+    const bw = W - padL - padR, max = Math.max(...totals), sc = max > 0 ? bw / max : 0, barH = Math.min(15, rowH - 9);
+    s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, ${yearSel}"${grow ? ' class="grow"' : ""}>`;
+    s += `<rect id="band" class="band" x="0" y="0" width="${W}" height="${rowH}" rx="8"/>`;
+    months.forEach((k, i) => {
+      const y0 = padT + i * rowH, yb = y0 + (rowH - barH) / 2;
+      s += `<rect class="track" x="${padL}" y="${yb.toFixed(1)}" width="${bw.toFixed(1)}" height="${barH}" rx="${barH / 2}"/>`;
+      const segs = groups.filter(g => g.v[i] > 0); let acc = 0;
+      segs.forEach((g, j) => {
+        const w = g.v[i] * sc, x = padL + acc * sc; acc += g.v[i];
+        const d = j === segs.length - 1 ? hbarPath(x, yb, w, barH, barH / 2) : `M${x.toFixed(1)},${yb.toFixed(1)}h${w.toFixed(1)}v${barH}h${(-w).toFixed(1)}Z`;
+        s += `<path class="hbar f-${g.cls}" data-m="${i}" style="animation-delay:${i * 30}ms" d="${d}"/>`;
+      });
+      s += `<text data-lbl="${i}" x="${padL - 8}" y="${(y0 + rowH / 2 + 4).toFixed(1)}" text-anchor="end"${k === cur ? ' class="cur"' : ""}>${esc(monthName(k, { month: "short" }))}</text>`;
+      if (totals[i] > 0) s += `<text class="val" data-m="${i}" x="${(padL + totals[i] * sc + 6).toFixed(1)}" y="${(y0 + rowH / 2 + 4).toFixed(1)}">${esc(fmtMetric(totals[i]))}</text>`;
+    });
+    if (avg > 0 && withData.length > 1) { const ax = (padL + avg * sc).toFixed(1); s += `<line class="avg" x1="${ax}" x2="${ax}" y1="${padT}" y2="${H - padT}"/>`; }
+    months.forEach((k, i) => { s += `<rect class="hit" data-i="${i}" tabindex="0" role="button" aria-label="${esc(monthName(k))}: open details" x="0" y="${padT + i * rowH}" width="${W}" height="${rowH}" fill="transparent"/>`; });
+    box.innerHTML = s + "</svg>";
+    chartState = { months, groups, totals, style, eff, orient: "h", rect: i => ({ x: padL, y: padT + i * rowH, w: bw, h: rowH }) };
+    hideTip(); return;
+  }
+
+  const H = 236, pad = { l: 50, r: 12, t: 18, b: 26 };
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b, slot = iw / 12, cx = i => pad.l + slot * i + slot / 2;
+  const share = style === "share", stack = style === "bars" || share;
+  const max = share ? 100 : stack ? Math.max(...totals) : Math.max(0, ...groups.flatMap(g => g.v));
+  const step = share ? 25 : niceStep(max / 4), top = share ? 100 : Math.ceil(max / step) * step;
+  const y = v => pad.t + ih - (v / top) * ih;
+  s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}, ${yearSel}"${grow ? ' class="grow"' : ""}>`;
+  for (let v = 0; v <= top + 1e-9; v += step) { const yy = y(v).toFixed(1); s += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}"/><text x="${pad.l - 8}" y="${+yy + 4}" text-anchor="end">${share ? v + "%" : fmtMetric(v, step < 1 ? "fine" : true)}</text>`; }
+  s += `<rect id="band" class="band" x="0" y="${pad.t - 8}" width="${slot.toFixed(1)}" height="${ih + 8}" rx="8"/>`;
+
+  if (style === "cumulative") {
+    for (const g of groups) {
+      const first = g.v.findIndex(v => v > 0); if (first < 0 || first > lastIdx) continue;
+      const pts = g.v.slice(0, lastIdx + 1).map((v, i) => [cx(i), y(v), i]).slice(first);
+      const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+      s += `<polygon class="area f-${g.cls}" points="${pts[0][0].toFixed(1)},${y(0).toFixed(1)} ${line} ${pts[pts.length - 1][0].toFixed(1)},${y(0).toFixed(1)}"/>`;
+      s += `<polyline class="ln s-${g.cls}" points="${line}"/>`;
+      pts.forEach((p, j) => { s += `<circle class="dot s-${g.cls}" data-m="${p[2]}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${j === pts.length - 1 ? 4 : 2.6}"/>`; });
+    }
+  } else if (stack) {
+    const bw = Math.min(36, slot * 0.64), r = Math.min(6, bw / 3);
     months.forEach((k, i) => {
       const x = pad.l + slot * i + (slot - bw) / 2; let acc = 0;
-      for (const g of groups) {
-        if (g.v[i] <= 0) continue;
-        const y0 = y(acc), y1 = y(acc + g.v[i]); acc += g.v[i];
-        s += `<rect class="f-${g.cls}" data-m="${i}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, y0 - y1).toFixed(1)}" rx="2"/>`;
-      }
+      const segs = groups.filter(g => g.v[i] > 0);
+      segs.forEach((g, j) => {
+        const v = share ? g.v[i] / totals[i] * 100 : g.v[i];
+        const y0 = y(acc), y1 = y(acc + v); acc += v; const h = Math.max(1, y0 - y1);
+        const d = j === segs.length - 1 ? barPath(x, y1, bw, h, r) : `M${x.toFixed(1)},${y1.toFixed(1)}h${bw.toFixed(1)}v${h.toFixed(1)}h${(-bw).toFixed(1)}Z`;
+        s += `<path class="bar f-${g.cls}" data-m="${i}" style="animation-delay:${i * 30}ms" d="${d}"/>`;
+      });
+      // total above the bar where there's room
+      if (!share && totals[i] > 0 && slot >= 40) s += `<text class="val" data-m="${i}" x="${cx(i).toFixed(1)}" y="${(y(totals[i]) - 6).toFixed(1)}" text-anchor="middle">${esc(fmtMetric(totals[i], true))}</text>`;
     });
   } else {
-    for (const g of groups) {
-      // start each line at its first month with data (a car bought mid-year doesn't sit on zero before then)
-      const first = g.v.findIndex(v => v > 0); if (first < 0 || first > lastIdx) continue;
-      const pts = g.v.slice(0, lastIdx + 1).map((v, i) => [cx(i), y(v), i]).slice(first).filter(p => !eff || g.v[p[2]] > 0);   // efficiency: skip months without data
-      const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
-      if (style === "area" || style === "cumulative")
-        s += `<polygon class="area f-${g.cls}" points="${pts[0][0].toFixed(1)},${y(0).toFixed(1)} ${line} ${pts[pts.length - 1][0].toFixed(1)},${y(0).toFixed(1)}"/>`;
-      s += `<polyline class="ln s-${g.cls}" points="${line}"/>`;
-      pts.forEach((p, j) => { if (g.v[p[2]] > 0 || style === "cumulative") s += `<circle class="dot s-${g.cls}" data-m="${p[2]}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${j === pts.length - 1 ? 4 : 2.6}"/>`; });
-    }
+    // side by side: one slim bar per group in each month
+    const n = groups.length, inner = Math.min(slot * 0.82, n * 16), gw = inner / n, bwg = Math.max(2, gw - (n > 1 ? Math.min(3, gw * 0.18) : 0));
+    months.forEach((k, i) => {
+      groups.forEach((g, j) => {
+        if (g.v[i] <= 0) return;
+        const x = pad.l + slot * i + (slot - inner) / 2 + j * gw + (gw - bwg) / 2, y1 = y(g.v[i]);
+        s += `<path class="bar f-${g.cls}" data-m="${i}" style="animation-delay:${i * 30 + j * 40}ms" d="${barPath(x, y1, bwg, Math.max(1, y(0) - y1), Math.min(4, bwg / 2))}"/>`;
+      });
+    });
   }
-  // hover/tap targets: one per month, full height (the card is drawn by showTip)
+  // dashed line at the average month (months with data so far)
+  if (!share && style !== "cumulative" && (stack || eff) && avg > 0 && withData.length > 1) {
+    const ya = y(avg).toFixed(1);
+    s += `<line class="avg" x1="${pad.l}" x2="${W - pad.r}" y1="${ya}" y2="${ya}"/><text class="avg-t" x="${W - pad.r}" y="${(+ya - 5).toFixed(1)}" text-anchor="end">avg ${esc(fmtMetric(avg, true))}</text>`;
+  }
   months.forEach((k, i) => {
-    s += `<rect class="hit" data-i="${i}" x="${(pad.l + slot * i).toFixed(1)}" y="${pad.t}" width="${slot.toFixed(1)}" height="${ih + pad.b}" fill="transparent"/>`;
+    s += `<rect class="hit" data-i="${i}" tabindex="0" role="button" aria-label="${esc(monthName(k))}: open details" x="${(pad.l + slot * i).toFixed(1)}" y="${pad.t - 8}" width="${slot.toFixed(1)}" height="${ih + pad.b + 8}" fill="transparent"/>`;
     s += `<text data-lbl="${i}" x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"${k === cur ? ' class="cur"' : ""}>${esc(monthName(k, { month: narrow ? "narrow" : "short" }))}</text>`;
   });
   box.innerHTML = s + "</svg>";
-  chartState = { months, groups, totals, style, W, slot, pad, cx, eff };
+  chartState = { months, groups, totals, style, eff, share, orient: "v", rect: i => ({ x: pad.l + slot * i, y: pad.t, w: slot, h: ih }) };
   hideTip();
 }
 
@@ -865,21 +983,23 @@ function renderClaims() {
   }).join("");
   $("#claimSum").innerHTML = owed > 0.004 ? `<b>${money(owed)}</b> to claim` : `<span class="all">All claimed</span>`;
 }
-$("#claimList").addEventListener("click", e => {
+function claimClick(e) {
   const b = e.target.closest("button[data-claim]"); if (!b || !db) return;
   const k = b.dataset.claim, on = b.getAttribute("aria-pressed") === "true";
   const val = on ? null : Number(b.dataset.amt);
   settings = { ...settings, claimed: { ...(settings.claimed || {}), [k]: val } }; renderClaims();   // show it straight away
   run(() => mergeSettings({ claimed: { [k]: val } }), "That didn't save");
+  if (!$("#monthScrim").hidden) renderMonth();
   toast(on ? `${monthName(k)} marked as not claimed` : `${monthName(k)} marked as claimed`);
-});
+}
+$("#claimList").addEventListener("click", claimClick);
 
-/* ---------- chart hover card ---------- */
+/* ---------- chart hover card (mouse) ---------- */
 let chartState = null, tipIdx = -1;
-function monthStats(k) {
-  const list = vc().filter(c => ym(c.date || "") === k); const ds = distSince();
-  let dist = 0; for (const c of list) if (isNum(ds[c.id]) && ds[c.id] > 0) dist += ds[c.id];
-  return { ...sums(list), dist };
+function monthStats(k, list = vc()) {
+  const L = list.filter(c => ym(c.date || "") === k); const ds = distSince();
+  let dist = 0, kwhD = 0; for (const c of L) if (isNum(ds[c.id]) && ds[c.id] >= 0) { dist += ds[c.id]; kwhD += c.kwh || 0; }
+  return { ...sums(L), dist, eff: effOf(kwhD, dist), list: L };
 }
 function showTip(i) {
   const st = chartState; if (!st || i < 0 || i > 11) return;
@@ -904,20 +1024,28 @@ function showTip(i) {
       const pct = st.totals[i] > 0 ? Math.round(g.v[i] / st.totals[i] * 100) : 0;
       return `<div class="t-row"><i class="sw bg-${g.cls}"></i><span>${esc(g.label)}</span><b>${fmtMetric(g.v[i])}</b><em>${pct}%</em><s style="--w:${pct}%" class="bg-${g.cls}"></s></div>`;
     }).join("")}</div>` : ""}
-    <div class="t-foot">${cum ? "In " + esc(monthName(k, { month: "long" })) + ": " : ""}${foot}</div>`;
+    <div class="t-foot">${cum ? "In " + esc(monthName(k, { month: "long" })) + ": " : ""}${foot}</div>
+    <div class="t-hint">Click for the full month</div>`;
   tip.hidden = false;
   // highlight the month: band behind it, everything else fades
   svg.classList.add("hl");
   svg.querySelectorAll("[data-m]").forEach(el => el.classList.toggle("on", +el.dataset.m === i));
   svg.querySelectorAll("[data-lbl]").forEach(el => el.classList.toggle("on", +el.dataset.lbl === i));
-  const band = svg.querySelector("#band"); band.setAttribute("x", (st.pad.l + st.slot * i).toFixed(1)); band.classList.add("on");
-  // place the card beside the column, flipping to the other side near the right edge
-  const boxW = $("#chart").clientWidth, tw = tip.offsetWidth, th = tip.offsetHeight, x = st.cx(i);
-  let left = x + st.slot / 2 + 10;
-  if (left + tw > boxW) left = x - st.slot / 2 - 10 - tw;
-  if (left < 0) left = Math.max(0, Math.min(boxW - tw, x - tw / 2));
-  tip.style.left = left + "px";
-  tip.style.top = Math.max(0, Math.min(st.pad.t, $("#chart").clientHeight - th)) + "px";
+  const r = st.rect(i), band = svg.querySelector("#band");
+  if (st.orient === "h") band.setAttribute("y", r.y.toFixed(1)); else band.setAttribute("x", r.x.toFixed(1));
+  band.classList.add("on");
+  // place the card beside the month (or under the row), flipping near the edges
+  const boxW = $("#chart").clientWidth, boxH = $("#chart").clientHeight, tw = tip.offsetWidth, th = tip.offsetHeight;
+  let left, top;
+  if (st.orient === "h") {
+    left = Math.max(0, Math.min(boxW - tw, r.x + 24));
+    top = r.y + r.h + 4; if (top + th > boxH) top = r.y - th - 4;
+  } else {
+    left = r.x + r.w + 10; if (left + tw > boxW) left = r.x - 10 - tw;
+    if (left < 0) left = Math.max(0, Math.min(boxW - tw, r.x + r.w / 2 - tw / 2));
+    top = Math.min(r.y, boxH - th);
+  }
+  tip.style.left = left + "px"; tip.style.top = Math.max(0, top) + "px";
 }
 function hideTip() {
   tipIdx = -1; const tip = $("#tip"); if (tip) tip.hidden = true;
@@ -927,11 +1055,93 @@ function hideTip() {
 {
   const ch = $("#chart");
   const at = e => { const h = e.target.closest && e.target.closest(".hit"); return h ? +h.dataset.i : -1; };
-  ch.addEventListener("pointermove", e => { const i = at(e); if (i >= 0 && i !== tipIdx) showTip(i); });
-  ch.addEventListener("pointerdown", e => { const i = at(e); if (i < 0) return; if (i === tipIdx && e.pointerType !== "mouse") hideTip(); else showTip(i); });
+  const open = i => { if (i < 0 || !chartState) return; hideTip(); openMonth(chartState.months[i]); };
+  // mouse: hover shows the quick card, click opens the month. Touch: a tap opens the month straight away.
+  ch.addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; const i = at(e); if (i >= 0 && i !== tipIdx) showTip(i); });
   ch.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hideTip(); });
-  document.addEventListener("pointerdown", e => { if (!ch.contains(e.target)) hideTip(); });
+  ch.addEventListener("click", e => open(at(e)));
+  ch.addEventListener("focusin", e => { const i = at(e); if (i >= 0) showTip(i); });
+  ch.addEventListener("focusout", () => hideTip());
+  ch.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { const i = at(e); if (i >= 0) { e.preventDefault(); open(i); } } });
 }
+
+/* ---------- month details page ---------- */
+let monthKey = null;
+const MONTH_KINDS = {
+  cost: { label: "Spent", fmt: v => money(v), better: "lower" },
+  kwh: { label: "Energy", fmt: v => nf(v, 0) + "<small>kWh</small>" },
+  dist: { label: "Distance", fmt: v => v ? nf(v) + "<small>" + distU() + "</small>" : "–" },
+  eff: { label: "Efficiency", fmt: v => v ? (settings.unit === "mi" ? nf(v, 2) + "<small>mi/kWh</small>" : nf(v, 1) + "<small>kWh/100 km</small>") : "–", better: settings => settings.unit === "mi" ? "higher" : "lower" },
+  n: { label: "Charges", fmt: v => nf(v) },
+  avg: { label: "Average price", fmt: v => v != null ? money(v, 3) + "<small>/kWh</small>" : "–", better: "lower" },
+};
+function openMonth(k) { monthKey = k; renderMonth(); openSheet("#monthScrim"); setTimeout(() => $("#mClose").focus(), 30); }
+function renderMonth() {
+  if (!monthKey) return;
+  const k = monthKey, prevK = ymAdd(k, -1), lyK = ymAdd(k, -12);
+  const m = monthStats(k), p = monthStats(prevK), ly = monthStats(lyK);
+  $("#mTitle").textContent = monthName(k, { month: "long", year: "numeric" });
+  $("#mScope").textContent = multiCar() ? (carSel === "all" ? "Both cars" : carName(carSel)) : "";
+  const first = charges.reduce((a, c) => c.date && (!a || c.date < a) ? c.date : a, null);
+  $("#mPrev").disabled = !first || prevK < ym(first);
+  $("#mNext").disabled = k >= ym(todayISO());
+  const val = (s, key) => key === "cost" ? s.cost : key === "kwh" ? s.kwh : key === "dist" ? s.dist : key === "eff" ? s.eff : key === "n" ? s.n : s.avg;
+  const delta = (key, a, b, name) => {
+    const K = MONTH_KINDS[key], x = val(a, key), y = val(b, key);
+    if (!b.n || !isNum(x) || !isNum(y) || !y || !a.n) return "";
+    const pct = Math.round((x - y) / y * 100); if (!isFinite(pct)) return "";
+    const better = typeof K.better === "function" ? K.better(settings) : K.better;
+    const cls = pct === 0 || !better ? "flat" : (pct < 0) === (better === "lower") ? "good" : "bad";
+    return `<span class="d ${cls}">${pct > 0 ? "▲" : pct < 0 ? "▼" : "="} ${Math.abs(pct)}%</span> vs ${esc(name)}`;
+  };
+  const tiles = ["cost", "kwh", "dist", "eff", "n", "avg"].map(key => {
+    const K = MONTH_KINDS[key];
+    const d1 = delta(key, m, p, monthName(prevK, { month: "short" })), d2 = delta(key, m, ly, monthName(lyK, { month: "short", year: "numeric" }));
+    return `<div class="m-tile${key === "cost" ? " big" : ""}"><span class="lbl">${K.label}</span><b>${m.n || key === "n" ? K.fmt(val(m, key)) : "–"}</b>${d1 ? `<span class="dl">${d1}</span>` : ""}${d2 ? `<span class="dl">${d2}</span>` : ""}</div>`;
+  }).join("");
+  // split by charger type (by cost, or by energy when nothing has a cost)
+  const byCost = m.cost > 0, total = byCost ? m.cost : m.kwh;
+  const types = Object.entries(TYPES).map(([t, T]) => { const s = sums(m.list.filter(c => c.type === t)); return { t, T, s, v: byCost ? s.cost : s.kwh }; }).filter(x => x.s.n);
+  const split = m.n ? `<section class="m-sec"><h3>By charger type</h3>
+    <div class="m-bar">${types.map(x => `<i class="bg-${x.t}" style="flex:${Math.max(x.v, total * 0.004)}"></i>`).join("")}</div>
+    <div class="m-rows">${types.map(x => `<div class="m-row"><i class="sw bg-${x.t}"></i><span>${x.T.label}</span><em>${x.s.n} · ${nf(x.s.kwh, 1)} kWh</em><b>${money(x.s.cost)}</b><small>${total > 0 ? Math.round(x.v / total * 100) : 0}%</small></div>`).join("")}</div></section>` : "";
+  // per car, when both are shown
+  let carsSec = "";
+  if (multiCar() && carSel === "all" && m.n) {
+    carsSec = `<section class="m-sec"><h3>By car</h3><div class="m-rows">${cars().map((c, i) => {
+      const s = monthStats(k, charges.filter(x => carOf(x) === c.id)); if (!s.n) return "";
+      return `<div class="m-row"><i class="sw bg-s${i % 3}"></i><span>${esc(c.name)}</span><em>${s.n} · ${nf(s.kwh, 0)} kWh${s.dist ? " · " + nf(s.dist) + " " + distU() : ""}${s.eff ? " · " + MONTH_KINDS.eff.fmt(s.eff).replace(/<\/?small>/g, " ").replace(/\s+/g, " ").trim() : ""}</em><b>${money(s.cost)}</b><small></small></div>`;
+    }).join("")}</div></section>`;
+  }
+  // work claim for the month (both cars)
+  const wk = sums(charges.filter(c => c.type === "work" && ym(c.date || "") === k));
+  let workSec = "";
+  if (wk.n) {
+    const amt = Math.round(wk.cost * 100) / 100, cl = claimedOf(k), extra = cl != null ? Math.round((amt - cl) * 100) / 100 : 0;
+    const state = cl == null ? "open" : extra > 0.004 ? "more" : "done";
+    const btn = state === "done"
+      ? `<button type="button" class="claim-btn on" data-claim="${k}" data-amt="${amt}" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg>Claimed</button>`
+      : `<button type="button" class="claim-btn" data-claim="${k}" data-amt="${amt}" aria-pressed="false">${state === "more" ? "Claim again" : "Mark claimed"}</button>`;
+    workSec = `<section class="m-sec"><h3>Work claim</h3><div class="claim ${state}"><span class="cm"><b>${money(amt)}</b><span>${wk.n} work charge${wk.n === 1 ? "" : "s"}${state === "more" ? ` · <b class="warn">${money(extra)} added since claimed</b>` : state === "done" ? " · claimed" : " · not claimed yet"}</span></span><span></span>${btn}</div></section>`;
+  }
+  const ds = distSince();
+  const list = m.n ? `<section class="m-sec"><h3>Charges</h3><div class="m-list">${sorted(m.list).map(c => rowHTML(c, ds[c.id], !canWrite)).join("")}</div></section>`
+    : `<div class="empty"><p>No charges in ${esc(monthName(k, { month: "long", year: "numeric" }))}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`;
+  $("#mBody").innerHTML = `<div class="m-stats">${tiles}</div>${split}${carsSec}${workSec}${list}`;
+}
+const stepMonth = n => { const btn = n < 0 ? $("#mPrev") : $("#mNext"); if (btn.disabled) return; monthKey = ymAdd(monthKey, n); renderMonth(); $("#mBody").scrollTop = 0; };
+$("#mPrev").addEventListener("click", () => stepMonth(-1));
+$("#mNext").addEventListener("click", () => stepMonth(1));
+document.addEventListener("keydown", e => {
+  if ($("#monthScrim").hidden || e.target.closest("input,textarea,select")) return;
+  if (e.key === "ArrowLeft") stepMonth(-1); else if (e.key === "ArrowRight") stepMonth(1);
+});
+$("#mBody").addEventListener("click", e => {
+  if (e.target.closest("button[data-claim]")) return claimClick(e);
+  const r = e.target.closest(".row"); if (!r || !canWrite) return;
+  const c = charges.find(x => x.id === r.dataset.id); if (!c) return;
+  closeSheet("#monthScrim"); openForm(c);
+});
 
 function renderLegend() {
   const list = vc().filter(inYear);
@@ -1105,7 +1315,7 @@ function openSettings() {
   $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
     `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
   $("#carNames").querySelectorAll("input").forEach(i => i.className = "");
-  for (const [name, val] of [["theme", settings.theme], ["accent", settings.accent], ["chartStyle", settings.chartStyle]]) {
+  for (const [name, val] of [["theme", settings.theme], ["accent", settings.accent], ["chartStyle", chartStyleNow(settings.chartStyle)]]) {
     const r = document.querySelector(`input[name="${name}"][value="${val}"]`) || document.querySelector(`input[name="${name}"]`); r.checked = true;
   }
   openSheet("#setScrim");
@@ -1337,6 +1547,6 @@ function boot() {
 boot();
 })();
 </script>
-<script type="module" src="cloud.js?v=20261119b"></script>
+<script type="module" src="cloud.js?v=20261119c"></script>
 </body>
 </html>
