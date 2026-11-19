@@ -113,6 +113,31 @@ button{font:inherit;color:inherit}
 .carpick input:checked + span{border-color:var(--ink);background:var(--surface-2)}
 .carpick input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .carnames{display:flex;flex-direction:column;gap:8px}
+.pill-work{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 6px;white-space:nowrap;align-self:center}
+.check{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;font-weight:600;font-size:14px}
+.check input{width:20px;height:20px;accent-color:var(--accent);margin:0;flex:none}
+.check small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.check:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+/* work charging panel */
+.wk-total{font-family:var(--display);font-weight:600;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wk-total b{color:var(--ink)}
+.wk details{border-bottom:1px solid var(--line)}
+.wk summary{list-style:none;display:grid;grid-template-columns:14px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:12px 4px;cursor:pointer}
+.wk summary::-webkit-details-marker{display:none}
+.wk summary:hover{background:var(--surface-2)}
+.wk .chev{width:14px;height:14px;color:var(--muted);transition:transform .15s}
+.wk details[open] .chev{transform:rotate(90deg)}
+.wk .wm{display:flex;flex-direction:column;min-width:0}
+.wk .wm b{font-weight:600}
+.wk .wm span{font-size:12.5px;color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wk .amt-w{font-family:var(--display);font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
+.wk .copy{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 10px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:var(--ink)}
+.wk .copy:hover{border-color:var(--accent);color:var(--accent)}
+.wk .copy svg{width:14px;height:14px}
+.wk .wl{display:flex;flex-direction:column;gap:2px;padding:0 4px 12px 30px}
+.wk .wl div{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;font-size:13px;font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--muted);padding:3px 0}
+.wk .wl div b{color:var(--ink);font-weight:500;text-align:right;min-width:64px}
+@media (max-width:420px){.wk .copy span{display:none}.wk .wl{padding-left:4px}.wk .wl div{gap:10px;font-size:12px}.wk .wl div span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wk .wl div b{min-width:52px}}
 .yearpick{font:inherit;font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:5px 34px 5px 12px;cursor:pointer;appearance:none;-webkit-appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%;background-size:5px 5px;background-repeat:no-repeat}
 .yearsum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
@@ -331,6 +356,14 @@ button{font:inherit;color:inherit}
     <div class="legend" id="legend"></div>
   </section>
 
+  <section class="panel wk" id="workPanel" aria-labelledby="workTitle" hidden>
+    <div class="panel-head">
+      <h2 id="workTitle">Work charging</h2>
+      <span class="wk-total" id="workTotal"></span>
+    </div>
+    <div id="workList"></div>
+  </section>
+
   <section class="panel" aria-labelledby="logTitle">
     <div class="panel-head">
       <h2 id="logTitle">Charges</h2>
@@ -339,6 +372,7 @@ button{font:inherit;color:inherit}
         <button type="button" class="chip" data-f="home" aria-pressed="false">Home</button>
         <button type="button" class="chip" data-f="public" aria-pressed="false">Public</button>
         <button type="button" class="chip" data-f="fast" aria-pressed="false">Fast DC</button>
+        <button type="button" class="chip" data-f="work" aria-pressed="false">Work</button>
       </div>
     </div>
     <div id="list"></div>
@@ -371,6 +405,7 @@ button{font:inherit;color:inherit}
     </div>
     <label class="fld"><span>Location <small style="font-weight:400">(optional)</small></span><input type="text" id="f-loc" list="locs" autocomplete="off" placeholder="e.g. Home, Ionity A1 services"></label>
     <datalist id="locs"></datalist>
+    <label class="check"><input type="checkbox" id="f-work"><span>Work charge<small>Counts towards the monthly work claim.</small></span></label>
     <label class="fld"><span>Notes <small style="font-weight:400">(optional)</small></span><textarea id="f-notes" rows="2" placeholder="Cold morning, preconditioned, etc."></textarea></label>
     <div class="preview" id="preview"></div>
     <p class="err" id="formErr" hidden></p>
@@ -560,7 +595,7 @@ const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^
 function sums(list) { let kwh = 0, cost = 0, kwhPriced = 0; for (const c of list) { kwh += c.kwh || 0; const k = costOf(c); if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; } } return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length }; }
 
 /* ---------- render ---------- */
-function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderList(); }
+function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderWork(); renderList(); }
 
 /* year view: the chart, its totals, the legend and the charge list all show one calendar year */
 const thisYear = () => todayISO().slice(0, 4);
@@ -729,12 +764,49 @@ function renderChart(styleOverride) {
   hideTip();
 }
 
+/* ---------- work charging: monthly totals to claim back ---------- */
+const workText = (k, list) => [`Work charging – ${monthName(k)}`, ...sorted(list).reverse().map(c =>
+  `${dayLabel(c.date)} · ${multiCar() ? carName(carOf(c)) + " · " : ""}${nf(c.kwh, 2)} kWh · ${money(costOf(c))}`), `Total: ${money(sums(list).cost)}`].join("\n");
+function renderWork() {
+  const panel = $("#workPanel");
+  panel.hidden = !loaded || !vc().some(c => c.work);
+  if (panel.hidden) return;
+  const list = vc().filter(c => c.work && inYear(c)); const y = sums(list);
+  $("#workTotal").innerHTML = list.length ? `${yearSel}: <b>${money(y.cost)}</b>` : "";
+  if (!list.length) { $("#workList").innerHTML = `<div class="empty"><p>No work charges in ${yearSel}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`; return; }
+  const open = new Set([...document.querySelectorAll("#workList details[open]")].map(d => d.dataset.k));
+  const groups = {}; for (const c of list) (groups[ym(c.date)] ||= []).push(c);
+  $("#workList").innerHTML = Object.keys(groups).sort().reverse().map(k => {
+    const g = groups[k], s = sums(g);
+    return `<details data-k="${k}"${open.has(k) ? " open" : ""}><summary>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+      <span class="wm"><b>${esc(monthName(k))}</b><span>${s.n} charge${s.n === 1 ? "" : "s"} · ${nf(s.kwh, 1)} kWh</span></span>
+      <span class="amt-w">${money(s.cost)}</span>
+      <button type="button" class="copy" data-copy="${k}" aria-label="Copy ${esc(monthName(k))} work charges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span></button>
+    </summary><div class="wl">${sorted(g).reverse().map(c =>
+      `<div><span>${esc(dayLabel(c.date))}${multiCar() ? " · " + esc(carName(carOf(c))) : ""}</span><span>${nf(c.kwh, 1)} kWh</span><b>${money(costOf(c))}</b></div>`).join("")}</div></details>`;
+  }).join("");
+}
+$("#workList").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-copy]"); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const k = b.dataset.copy, list = vc().filter(c => c.work && ym(c.date || "") === k);
+  const text = workText(k, list);
+  try { await navigator.clipboard.writeText(text); toast(`Copied ${monthName(k)} work charges`); }
+  catch {
+    const t = document.createElement("textarea"); t.value = text; t.style.position = "fixed"; t.style.opacity = "0"; document.body.appendChild(t); t.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {} t.remove();
+    toast(ok ? `Copied ${monthName(k)} work charges` : "Couldn't copy on this device");
+  }
+});
+
 /* ---------- chart hover card ---------- */
 let chartState = null, tipIdx = -1;
 function monthStats(k) {
   const list = vc().filter(c => ym(c.date || "") === k); const ds = distSince();
   let dist = 0; for (const c of list) if (isNum(ds[c.id]) && ds[c.id] > 0) dist += ds[c.id];
-  return { ...sums(list), dist };
+  const w = sums(list.filter(c => c.work));
+  return { ...sums(list), dist, work: w.cost, nWork: w.n };
 }
 function showTip(i) {
   const st = chartState; if (!st || i < 0 || i > 11) return;
@@ -749,7 +821,8 @@ function showTip(i) {
     ? [`<b>${nf(ms.n)}</b> charge${ms.n === 1 ? "" : "s"}`,
        (cum || metric !== "kwh") ? `<b>${nf(ms.kwh, 0)}</b> kWh` : "",
        (cum || metric !== "cost") ? `<b>${money(ms.cost)}</b>` : "",
-       ms.dist && (cum || metric !== "dist") ? `<b>${nf(ms.dist)}</b> ${distU()}` : ""].filter(Boolean).join(" · ")
+       ms.dist && (cum || metric !== "dist") ? `<b>${nf(ms.dist)}</b> ${distU()}` : "",
+       ms.nWork ? `<b>${money(ms.work)}</b> work` : ""].filter(Boolean).join(" · ")
     : "No charges this month";
   const tip = $("#tip");
   tip.innerHTML = `<div class="t-head">${esc(head)}</div>
@@ -810,7 +883,7 @@ function rowHTML(c, dist, ro) {
   return `<button type="button" class="row${ro ? " ro" : ""}" data-id="${esc(c.id)}"${ro ? ' tabindex="-1"' : ""}>
     <span class="ico t-${c.type}">${T.icon}</span>
     <span class="main">
-      <span class="r1"><b>${esc(c.location || T.label)}</b><span class="date">${c.date ? dayLabel(c.date) : ""}</span></span>
+      <span class="r1"><b>${esc(c.location || T.label)}</b>${c.work ? '<span class="pill-work">Work</span>' : ""}<span class="date">${c.date ? dayLabel(c.date) : ""}</span></span>
       ${battHTML(c.socStart, c.socEnd)}
       ${meta ? `<span class="r3">${meta}</span>` : ""}
       ${c.notes ? `<span class="note-txt">${esc(c.notes)}</span>` : ""}
@@ -830,8 +903,8 @@ function renderList() {
       <div class="demo"><span class="tag">Example</span>${rowHTML(demo, 286, true)}</div></div>`;
     return;
   }
-  const ds = distSince(); const rows = sorted().filter(c => inYear(c) && (filter === "all" || c.type === filter));
-  if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${filter === "all" ? "" : esc(TYPES[filter].label.toLowerCase()) + " "}charges in ${yearSel}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`; return; }
+  const ds = distSince(); const rows = sorted().filter(c => inYear(c) && (filter === "all" || (filter === "work" ? c.work : c.type === filter)));
+  if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${filter === "all" ? "" : filter === "work" ? "work " : esc(TYPES[filter].label.toLowerCase()) + " "}charges in ${yearSel}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`; return; }
   let html = "", curM = null;
   const groups = {}; rows.forEach(c => (groups[ym(c.date || "")] ||= []).push(c));
   for (const c of rows) {
@@ -859,7 +932,7 @@ document.querySelectorAll(".scrim").forEach(s => {
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".scrim:not([hidden])").forEach(s => closeSheet("#" + s.id)); });
 
 /* ---------- charge form ---------- */
-const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), loc: $("#f-loc"), notes: $("#f-notes") };
+const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), loc: $("#f-loc"), notes: $("#f-notes"), work: $("#f-work") };
 const formType = () => (document.querySelector('input[name="type"]:checked') || {}).value || "home";
 
 function openForm(c) {
@@ -879,6 +952,7 @@ function openForm(c) {
   F.cost.value = c && isNum(c.cost) ? c.cost : "";
   F.loc.value = c ? (c.location || "") : "";
   F.notes.value = c ? (c.notes || "") : "";
+  F.work.checked = !!(c && c.work);
   $("#locs").innerHTML = [...new Set(charges.map(x => x.location).filter(Boolean))].map(l => `<option value="${esc(l)}"></option>`).join("");
   const del = $("#delBtn"); del.hidden = !c; del.classList.remove("armed"); del.textContent = "Delete";
   $("#formErr").hidden = true; $("#saveBtn").disabled = false;
@@ -915,7 +989,7 @@ $("#chargeForm").addEventListener("submit", async e => {
   if (!isNum(kwh) || kwh <= 0) return err("Enter the energy added in kWh, for example 34.2.");
   if (Number.isNaN(cost) || (isNum(cost) && cost < 0)) return err("The cost should be a number, for example 8.55.");
   const type = formType();
-  const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
+  const data = { date, type, car: formCar(), work: F.work.checked, kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
     odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   if (data.cost == null && type === "home" && isNum(settings.homePrice)) data.cost = Math.round(kwh * settings.homePrice * 100) / 100;
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
