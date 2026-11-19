@@ -98,12 +98,14 @@ button{font:inherit;color:inherit}
 .carpick input:checked + span{border-color:var(--ink);background:var(--surface-2)}
 .carpick input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .carnames{display:flex;flex-direction:column;gap:8px}
-.pill-work{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--charge);background:var(--charge-soft);border-radius:6px;padding:2px 6px;white-space:nowrap}
-.amt b.free{color:var(--charge)}
-.check{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;font-weight:600;font-size:14px}
-.check input{width:20px;height:20px;accent-color:var(--charge);margin:0;flex:none}
-.check small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
-.check:has(input:checked){border-color:var(--charge);background:var(--charge-soft)}
+.yearpick{font:inherit;font-family:var(--display);font-size:20px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:5px 34px 5px 12px;cursor:pointer;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 17px) 55%,calc(100% - 12px) 55%;background-size:5px 5px;background-repeat:no-repeat}
+.yearsum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.yearsum div{background:var(--surface-2);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.yearsum span{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.yearsum b{font-family:var(--display);font-weight:600;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yearsum b small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--muted);margin-left:3px}
+@media (max-width:620px){.yearsum{grid-template-columns:repeat(2,minmax(0,1fr))}.yearsum div:first-child{grid-column:1/-1}}
 .note{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:14px}
 
 /* stats */
@@ -252,12 +254,13 @@ button{font:inherit;color:inherit}
 
   <section class="panel" aria-labelledby="chartTitle">
     <div class="panel-head">
-      <h2 id="chartTitle">Last 12 months</h2>
+      <h2 id="chartTitle"><select id="yearPick" class="yearpick" aria-label="Year"></select></h2>
       <div class="seg-mini" role="group" aria-label="Chart shows">
         <button type="button" id="m-cost" aria-pressed="true">Spend</button>
         <button type="button" id="m-kwh" aria-pressed="false">Energy</button>
       </div>
     </div>
+    <div class="yearsum" id="yearSum"></div>
     <div id="chart"></div>
     <div class="legend" id="legend"></div>
   </section>
@@ -304,7 +307,6 @@ button{font:inherit;color:inherit}
     </div>
     <label class="fld"><span>Location <small style="font-weight:400">(optional)</small></span><input type="text" id="f-loc" list="locs" autocomplete="off" placeholder="e.g. Home, Ionity A1 services"></label>
     <datalist id="locs"></datalist>
-    <label class="check"><input type="checkbox" id="f-work"><span>Free through work<small>Not counted in what you spent. Enter the cost anyway to see what work covered.</small></span></label>
     <label class="fld"><span>Notes <small style="font-weight:400">(optional)</small></span><textarea id="f-notes" rows="2" placeholder="Cold morning, preconditioned, etc."></textarea></label>
     <div class="preview" id="preview"></div>
     <p class="err" id="formErr" hidden></p>
@@ -409,6 +411,7 @@ try { const t = "__t"; localStorage.setItem(t, "1"); localStorage.removeItem(t);
 let charges = [], settings = { ...DEFAULTS };
 let filter = "all", metric = "cost", editingId = null;
 let carSel = (() => { try { return localStorage.getItem("chargelog.car") || "all"; } catch { return "all"; } })();
+let yearSel = (() => { try { return localStorage.getItem("chargelog.year") || ""; } catch { return ""; } })();
 
 /* ---------- formatting ---------- */
 const isNum = v => typeof v === "number" && isFinite(v);
@@ -433,8 +436,6 @@ const distU = () => settings.unit === "mi" ? "mi" : "km";
 
 /* ---------- derived ---------- */
 function costOf(c) { if (isNum(c.cost)) return c.cost; if (c.type === "home" && isNum(settings.homePrice) && isNum(c.kwh)) return c.kwh * settings.homePrice; return null; }
-// What it actually cost him: charges free through work count as 0 (their cost is what work covered).
-const paidOf = c => c.work ? 0 : costOf(c);
 /* cars: settings.cars = [{id, name}]; a charge without a car belongs to the first car */
 const cars = () => Array.isArray(settings.cars) ? settings.cars.filter(c => c && c.id && c.name) : [];
 const multiCar = () => cars().length > 1;
@@ -457,25 +458,41 @@ function efficiency(list) {
   for (const grp of byCar(list)) {
     const w = byOdo(grp); if (w.length < 2) continue;
     const d = w[w.length - 1].odo - w[0].odo; if (d <= 0) continue;
-    for (let i = 1; i < w.length; i++) { kwh += w[i].kwh || 0; cost += paidOf(w[i]) || 0; }
+    for (let i = 1; i < w.length; i++) { kwh += w[i].kwh || 0; cost += costOf(w[i]) || 0; }
     dist += d;
   }
   return dist > 0 && kwh > 0 ? { kwh, dist, cost } : null;
 }
 function mergeCars(a, b) { const out = [...(Array.isArray(a) ? a : [])]; for (const c of Array.isArray(b) ? b : []) if (c && c.id && !out.some(x => x.id === c.id)) out.push(c); return out; }
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "car";
-function sums(list) {
-  let kwh = 0, cost = 0, kwhPriced = 0, free = 0, nFree = 0;
-  for (const c of list) {
-    kwh += c.kwh || 0; const k = paidOf(c);
-    if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; }
-    if (c.work) { nFree++; free += costOf(c) || 0; }
-  }
-  return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length, free, nFree };
-}
+function sums(list) { let kwh = 0, cost = 0, kwhPriced = 0; for (const c of list) { kwh += c.kwh || 0; const k = costOf(c); if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; } } return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length }; }
 
 /* ---------- render ---------- */
-function renderAll() { renderCarBar(); renderHeader(); renderStats(); renderChart(); renderLegend(); renderList(); }
+function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderList(); }
+
+/* year view: the chart, its totals, the legend and the charge list all show one calendar year */
+const thisYear = () => todayISO().slice(0, 4);
+function years() { const s = new Set([thisYear()]); for (const c of vc()) if (c.date) s.add(c.date.slice(0, 4)); return [...s].sort().reverse(); }
+const inYear = c => (c.date || "").startsWith(yearSel);
+function renderYearPick() {
+  const ys = years(); if (!ys.includes(yearSel)) yearSel = thisYear();
+  const el = $("#yearPick"); const html = ys.map(y => `<option value="${y}"${y === yearSel ? " selected" : ""}>${y}</option>`).join("");
+  if (el.innerHTML !== html) el.innerHTML = html;
+  el.value = yearSel;
+  $("#logTitle").textContent = `Charges in ${yearSel}`;
+}
+function renderYearSum() {
+  const list = vc().filter(inYear); const s = sums(list); const ds = distSince();
+  // every charge after a car's first one counts, even with an unchanged odometer: its energy still went into later driving
+  let dist = 0, kwhD = 0; for (const c of list) if (isNum(ds[c.id]) && ds[c.id] >= 0) { dist += ds[c.id]; kwhD += c.kwh || 0; }
+  const effTxt = dist > 0 && kwhD > 0 ? (settings.unit === "mi" ? `${nf(dist / kwhD, 2)}<small>mi/kWh</small>` : `${nf(kwhD / dist * 100, 1)}<small>kWh/100 km</small>`) : "–";
+  $("#yearSum").innerHTML = !loaded ? "" : `
+    <div><span>Spent in ${yearSel}</span><b>${money(s.cost)}</b></div>
+    <div><span>Energy</span><b>${nf(s.kwh, 0)}<small>kWh</small></b></div>
+    <div><span>Charges</span><b>${nf(s.n)}</b></div>
+    <div><span>Distance</span><b>${dist ? nf(dist) + "<small>" + distU() + "</small>" : "–"}</b></div>
+    <div><span>Efficiency</span><b>${effTxt}</b></div>`;
+}
 
 function renderCarBar() {
   const bar = $("#carBar"); bar.hidden = !multiCar(); if (bar.hidden) return;
@@ -514,13 +531,13 @@ function renderStats() {
   $("#stats").innerHTML = `
     <div class="tile feature"><span class="lbl">Spent in ${esc(mName)}</span>
       <span class="val">${dash || money(m.cost)}</span>
-      <span class="sub">${loaded ? `${nf(m.n)} charge${m.n === 1 ? "" : "s"}${m.nFree ? ` (${m.nFree} free via work)` : ""} · ${money(p.cost)} last month` : "Loading"}</span></div>
+      <span class="sub">${loaded ? `${nf(m.n)} charge${m.n === 1 ? "" : "s"} · ${money(p.cost)} last month` : "Loading"}</span></div>
     <div class="tile"><span class="lbl">Energy in ${esc(mName)}</span>
       <span class="val">${dash || nf(m.kwh, 0)}<small>kWh</small></span>
       <span class="sub">${nf(all.kwh, 0)} kWh all time</span></div>
     <div class="tile"><span class="lbl">Average price</span>
       <span class="val">${dash || money(all.avg, 3)}<small>/kWh</small></span>
-      <span class="sub">${money(all.cost)} spent all time${all.nFree ? ` · ${money(all.free)} free via work` : ""}</span></div>
+      <span class="sub">${money(all.cost)} spent all time</span></div>
     <div class="tile"><span class="lbl">Efficiency</span>
       <span class="val">${dash || effVal}<small>${effUnit}</small></span>
       <span class="sub">${effSub}</span></div>`;
@@ -531,12 +548,12 @@ function niceStep(x) { if (x <= 0) return 1; const p = Math.pow(10, Math.floor(M
 
 function renderChart() {
   const box = $("#chart");
-  const months = last12();
-  const val = c => metric === "cost" ? (paidOf(c) || 0) : (c.kwh || 0);
+  const months = Array.from({ length: 12 }, (_, i) => `${yearSel}-${String(i + 1).padStart(2, "0")}`);
+  const val = c => metric === "cost" ? (costOf(c) || 0) : (c.kwh || 0);
   const data = months.map(k => { const r = { k, home: 0, public: 0, fast: 0 }; for (const c of vc()) if (ym(c.date || "") === k && r[c.type] !== undefined) r[c.type] += val(c); r.total = r.home + r.public + r.fast; return r; });
   const max = Math.max(0, ...data.map(r => r.total));
   if (!loaded || max === 0) {
-    box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + (metric === "cost" ? "spend" : "energy") + " shows up here once charges are logged." : "Loading…"}</div>`;
+    box.innerHTML = `<div class="chart-empty">${loaded ? "Monthly " + (metric === "cost" ? "spend" : "energy") + " for " + yearSel + " shows up here once charges are logged." : "Loading…"}</div>`;
     return;
   }
   const W = Math.max(300, Math.round(box.clientWidth || 600)), H = 220;
@@ -546,7 +563,7 @@ function renderChart() {
   const y = v => pad.t + ih - (v / top) * ih;
   const slot = iw / 12, bw = Math.min(34, slot * 0.62);
   const tickFmt = v => metric === "cost" ? (curSymbol().length <= 2 ? curSymbol() : "") + nf(v, v < 10 && step < 1 ? 1 : 0) : nf(v, 0);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric === "cost" ? "Monthly spend" : "Monthly energy"}, last 12 months">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric === "cost" ? "Monthly spend" : "Monthly energy"}, ${yearSel}">`;
   for (let v = 0; v <= top + 1e-9; v += step) { const yy = y(v).toFixed(1); s += `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}"/><text x="${pad.l - 8}" y="${+yy + 4}" text-anchor="end">${tickFmt(v)}</text>`; }
   const cur = ym(todayISO()); const narrow = W < 460;
   data.forEach((r, i) => {
@@ -566,7 +583,7 @@ function renderChart() {
 }
 
 function renderLegend() {
-  const list = vc();
+  const list = vc().filter(inYear);
   const total = list.reduce((a, c) => a + (c.kwh || 0), 0);
   $("#legend").innerHTML = Object.entries(TYPES).map(([t, T]) => {
     const s = sums(list.filter(c => c.type === t));
@@ -588,14 +605,12 @@ function rowHTML(c, dist, ro) {
   return `<button type="button" class="row${ro ? " ro" : ""}" data-id="${esc(c.id)}"${ro ? ' tabindex="-1"' : ""}>
     <span class="ico t-${c.type}">${T.icon}</span>
     <span class="main">
-      <span class="r1"><b>${esc(c.location || T.label)}</b>${c.work ? '<span class="pill-work">Work</span>' : ""}<span class="date">${c.date ? dayLabel(c.date) : ""}</span></span>
+      <span class="r1"><b>${esc(c.location || T.label)}</b><span class="date">${c.date ? dayLabel(c.date) : ""}</span></span>
       ${battHTML(c.socStart, c.socEnd)}
       ${meta ? `<span class="r3">${meta}</span>` : ""}
       ${c.notes ? `<span class="note-txt">${esc(c.notes)}</span>` : ""}
     </span>
-    <span class="amt">${c.work
-      ? `<b class="free">Free</b><small>${nf(c.kwh, 1)} kWh</small>${isNum(cost) && cost > 0 ? `<small>${money(cost)} via work</small>` : ""}`
-      : `<b>${money(cost)}</b><small>${nf(c.kwh, 1)} kWh</small>${ppk != null ? `<small>${money(ppk, 3)}/kWh</small>` : ""}`}</span>
+    <span class="amt"><b>${money(cost)}</b><small>${nf(c.kwh, 1)} kWh</small>${ppk != null ? `<small>${money(ppk, 3)}/kWh</small>` : ""}</span>
   </button>`;
 }
 
@@ -610,8 +625,8 @@ function renderList() {
       <div class="demo"><span class="tag">Example</span>${rowHTML(demo, 286, true)}</div></div>`;
     return;
   }
-  const ds = distSince(); const rows = sorted().filter(c => filter === "all" || c.type === filter);
-  if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${filter === "all" ? "" : esc(TYPES[filter].label.toLowerCase()) + " "}charges logged${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""} yet.</p></div>`; return; }
+  const ds = distSince(); const rows = sorted().filter(c => inYear(c) && (filter === "all" || c.type === filter));
+  if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${filter === "all" ? "" : esc(TYPES[filter].label.toLowerCase()) + " "}charges in ${yearSel}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`; return; }
   let html = "", curM = null;
   const groups = {}; rows.forEach(c => (groups[ym(c.date || "")] ||= []).push(c));
   for (const c of rows) {
@@ -636,7 +651,7 @@ document.querySelectorAll(".scrim").forEach(s => {
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".scrim:not([hidden])").forEach(s => closeSheet("#" + s.id)); });
 
 /* ---------- charge form ---------- */
-const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), s0: $("#f-s0"), s1: $("#f-s1"), loc: $("#f-loc"), notes: $("#f-notes"), work: $("#f-work") };
+const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), s0: $("#f-s0"), s1: $("#f-s1"), loc: $("#f-loc"), notes: $("#f-notes") };
 const formType = () => (document.querySelector('input[name="type"]:checked') || {}).value || "home";
 
 function openForm(c) {
@@ -658,7 +673,6 @@ function openForm(c) {
   F.s1.value = c && isNum(c.socEnd) ? c.socEnd : "";
   F.loc.value = c ? (c.location || "") : "";
   F.notes.value = c ? (c.notes || "") : "";
-  F.work.checked = !!(c && c.work);
   $("#locs").innerHTML = [...new Set(charges.map(x => x.location).filter(Boolean))].map(l => `<option value="${esc(l)}"></option>`).join("");
   const del = $("#delBtn"); del.hidden = !c; del.classList.remove("armed"); del.textContent = "Delete";
   $("#formErr").hidden = true; $("#saveBtn").disabled = false;
@@ -675,9 +689,7 @@ function updatePreview() {
   F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * settings.homePrice, 2)}` : "0.00";
   const ppk = isNum(effCost) && kwh > 0 ? effCost / kwh : null;
   const bar = battHTML(s0, s1) || `<span class="battline"><span class="batt"><i class="b0" style="width:0"></i></span><span class="pct">battery % optional</span></span>`;
-  $("#preview").innerHTML = bar + (F.work.checked
-    ? `<div class="pv"><span>You pay <b>Free</b></span><span>Work covers <b>${money(effCost)}</b></span></div>`
-    : `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`);
+  $("#preview").innerHTML = bar + `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`;
 }
 const formCar = () => (document.querySelector('input[name="car"]:checked') || {}).value || firstCar();
 function setOdoHint() {
@@ -701,7 +713,7 @@ $("#chargeForm").addEventListener("submit", async e => {
   if ((isNum(s0) && s0 > 100) || (isNum(s1) && s1 > 100)) return err("Battery levels go from 0 to 100%.");
   if (isNum(s0) && isNum(s1) && s1 < s0) return err("Battery after should be higher than battery before.");
   const type = formType();
-  const data = { date, type, car: formCar(), work: F.work.checked, kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
+  const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
     odo, socStart: s0, socEnd: s1, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   if (data.cost == null && type === "home" && isNum(settings.homePrice)) data.cost = Math.round(kwh * settings.homePrice * 100) / 100;
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
@@ -771,6 +783,10 @@ function applyUnits() {
   document.querySelectorAll(".u-curkwh").forEach(e => e.textContent = curSymbol() + "/kWh");
 }
 $("#addBtn").addEventListener("click", () => openForm(null));
+$("#yearPick").addEventListener("change", e => {
+  yearSel = e.target.value; try { localStorage.setItem("chargelog.year", yearSel); } catch {}
+  renderAll();
+});
 $("#carBar").addEventListener("click", e => {
   const b = e.target.closest("button[data-car]"); if (!b) return;
   carSel = b.dataset.car; try { localStorage.setItem("chargelog.car", carSel); } catch {}
