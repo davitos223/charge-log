@@ -1092,7 +1092,7 @@ function onAuth(user) {
   }
   $("#gate").hidden = true; note("");
   db = window.Cloud; canWrite = true; Store.onChange = null; loaded = false; setSync("connecting");
-  $("#acctBox").hidden = false; $("#acctEmail").textContent = "Signed in as " + user.email;
+  $("#acctBox").hidden = false; $("#acctEmail").textContent = "Signed in as " + user.email + (user.shared ? " · shared charge list" : "");
   $("#backupHint").textContent = "Charges sync to your account on every device. A backup file now and then is still a good idea.";
   applyWrite(); renderAll();
   // Charges logged on this device before sync was set up move into the account once.
@@ -1142,7 +1142,7 @@ function boot() {
   if (!window.CHARGE_LOG_FIREBASE) { useLocal(); return; }
   setSync("connecting"); renderAll();
   addEventListener("cloud-auth", e => onAuth(e.detail));
-  const fallback = () => { if (db) return; note("Sync couldn't load, so this shows charges saved on this device only."); setSync("offline"); useLocal(); };
+  const fallback = () => { if (db) return; if (window.Cloud) { note("Still connecting to your charge list…"); return; } note("Sync couldn't load, so this shows charges saved on this device only."); setSync("offline"); useLocal(); };
   addEventListener("cloud-failed", fallback);
   cloudTimer = setTimeout(fallback, 15000);
 }

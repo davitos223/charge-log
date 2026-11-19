@@ -23,25 +23,31 @@ Charges logged without signal are saved on the device and upload when it's back 
 
 To run without sync, set `window.CHARGE_LOG_FIREBASE = null` in `docs/config.js`. Charges then stay on each device.
 
+### Sharing one charge list between several logins
+
+Each login normally has its own list at `users/{uid}/charges`. To let another login use the same list:
+
+1. Add the person in Firebase → Authentication → Users and note their **User UID**.
+2. In Firestore, on the owner's side add `users/{ownerUid}/meta/sharing` with field `members` (array) containing the new UID.
+3. On the new person's side add `users/{newUid}/meta/link` with field `owner` (string) = the owner's UID.
+
+Both entries can only be changed in the Firebase console, never from the app.
+
 Firestore rules:
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function canUse(uid) {
+      return request.auth != null && (request.auth.uid == uid ||
+        (exists(/databases/$(database)/documents/users/$(uid)/meta/sharing) &&
+         request.auth.uid in get(/databases/$(database)/documents/users/$(uid)/meta/sharing).data.members));
     }
+    match /users/{uid}/charges/{id}    { allow read, write: if canUse(uid); }
+    match /users/{uid}/meta/settings   { allow read, write: if canUse(uid); }
+    match /users/{uid}/meta/sharing    { allow read: if canUse(uid); }
+    match /users/{uid}/meta/link       { allow read: if request.auth != null && request.auth.uid == uid; }
   }
 }
-```
-
-## Updating
-
-Everything in `docs/` is the app. Push changes to `main` and GitHub Pages publishes them within a minute or two. Phones and the PC app pick up the new version the next time they open.
-
-`desktop/` is the Windows wrapper (C#, WebView2). Rebuild it only if the wrapper itself changes:
-
-```
-dotnet publish desktop -c Release -o desktop/publish
 ```
