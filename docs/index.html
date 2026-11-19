@@ -343,8 +343,6 @@ button{font:inherit;color:inherit}
       <label class="fld"><span>Odometer</span><div class="unit"><input type="text" inputmode="numeric" id="f-odo" autocomplete="off"><em class="u-dist">km</em></div></label>
       <label class="fld"><span>Energy added</span><div class="unit"><input type="text" inputmode="decimal" id="f-kwh" autocomplete="off" placeholder="0.0"><em>kWh</em></div></label>
       <label class="fld"><span>Total cost</span><div class="unit"><input type="text" inputmode="decimal" id="f-cost" autocomplete="off"><em class="u-cur">EUR</em></div></label>
-      <label class="fld"><span>Battery before</span><div class="unit"><input type="text" inputmode="numeric" id="f-s0" autocomplete="off" placeholder="20"><em>%</em></div></label>
-      <label class="fld"><span>Battery after</span><div class="unit"><input type="text" inputmode="numeric" id="f-s1" autocomplete="off" placeholder="80"><em>%</em></div></label>
     </div>
     <label class="fld"><span>Location <small style="font-weight:400">(optional)</small></span><input type="text" id="f-loc" list="locs" autocomplete="off" placeholder="e.g. Home, Ionity A1 services"></label>
     <datalist id="locs"></datalist>
@@ -739,7 +737,7 @@ function renderList() {
   if (noDb) { box.innerHTML = `<div class="empty"><h3>Sign in to see the log</h3><p>The charge log is saved with your claude.ai account. Open this page while signed in to view and add charges.</p></div>`; return; }
   if (!loaded) { box.innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>'; return; }
   if (!charges.length) {
-    const demo = { id: "demo", type: "home", location: "Home", date: todayISO(), kwh: 34.2, cost: 8.55, odo: 32410, socStart: 22, socEnd: 80 };
+    const demo = { id: "demo", type: "home", location: "Home", date: todayISO(), kwh: 34.2, cost: 8.55, odo: 32410 };
     box.innerHTML = `<div class="empty"><h3>No charges yet</h3>
       <p>${canWrite ? "Tap <b>Log a charge</b> after each charge. Enter the kWh, the cost and your odometer, and the app works out price per kWh and efficiency." : "Charges logged by the owner appear here."}</p>
       <div class="demo"><span class="tag">Example</span>${rowHTML(demo, 286, true)}</div></div>`;
@@ -774,7 +772,7 @@ document.querySelectorAll(".scrim").forEach(s => {
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".scrim:not([hidden])").forEach(s => closeSheet("#" + s.id)); });
 
 /* ---------- charge form ---------- */
-const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), s0: $("#f-s0"), s1: $("#f-s1"), loc: $("#f-loc"), notes: $("#f-notes") };
+const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), loc: $("#f-loc"), notes: $("#f-notes") };
 const formType = () => (document.querySelector('input[name="type"]:checked') || {}).value || "home";
 
 function openForm(c) {
@@ -792,8 +790,6 @@ function openForm(c) {
   setOdoHint();
   F.kwh.value = c && isNum(c.kwh) ? c.kwh : "";
   F.cost.value = c && isNum(c.cost) ? c.cost : "";
-  F.s0.value = c && isNum(c.socStart) ? c.socStart : "";
-  F.s1.value = c && isNum(c.socEnd) ? c.socEnd : "";
   F.loc.value = c ? (c.location || "") : "";
   F.notes.value = c ? (c.notes || "") : "";
   $("#locs").innerHTML = [...new Set(charges.map(x => x.location).filter(Boolean))].map(l => `<option value="${esc(l)}"></option>`).join("");
@@ -806,13 +802,11 @@ function openForm(c) {
 
 function updatePreview() {
   const kwh = parseDec(F.kwh.value), cost = parseDec(F.cost.value);
-  const s0 = parseInt0(F.s0.value), s1 = parseInt0(F.s1.value);
   const home = formType() === "home" && isNum(settings.homePrice);
   const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * settings.homePrice : null);
   F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * settings.homePrice, 2)}` : "0.00";
   const ppk = isNum(effCost) && kwh > 0 ? effCost / kwh : null;
-  const bar = battHTML(s0, s1) || `<span class="battline"><span class="batt"><i class="b0" style="width:0"></i></span><span class="pct">battery % optional</span></span>`;
-  $("#preview").innerHTML = bar + `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`;
+  $("#preview").innerHTML = `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`;
 }
 const formCar = () => (document.querySelector('input[name="car"]:checked') || {}).value || firstCar();
 function setOdoHint() {
@@ -829,15 +823,13 @@ $("#chargeForm").addEventListener("submit", async e => {
   const err = m => { const el = $("#formErr"); el.textContent = m; el.hidden = false; };
   $("#formErr").hidden = true;
   const date = F.date.value, kwh = parseDec(F.kwh.value), cost = parseDec(F.cost.value);
-  const odo = parseInt0(F.odo.value), s0 = parseInt0(F.s0.value), s1 = parseInt0(F.s1.value);
+  const odo = parseInt0(F.odo.value);
   if (!date) return err("Pick the date of the charge.");
   if (!isNum(kwh) || kwh <= 0) return err("Enter the energy added in kWh, for example 34.2.");
   if (Number.isNaN(cost) || (isNum(cost) && cost < 0)) return err("The cost should be a number, for example 8.55.");
-  if ((isNum(s0) && s0 > 100) || (isNum(s1) && s1 > 100)) return err("Battery levels go from 0 to 100%.");
-  if (isNum(s0) && isNum(s1) && s1 < s0) return err("Battery after should be higher than battery before.");
   const type = formType();
   const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
-    odo, socStart: s0, socEnd: s1, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
+    odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   if (data.cost == null && type === "home" && isNum(settings.homePrice)) data.cost = Math.round(kwh * settings.homePrice * 100) / 100;
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
   const wasEdit = !!editingId;
