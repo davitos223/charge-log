@@ -113,6 +113,25 @@ button{font:inherit;color:inherit}
 .carpick input:checked + span{border-color:var(--ink);background:var(--surface-2)}
 .carpick input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .carnames{display:flex;flex-direction:column;gap:8px}
+/* work claims */
+.claim-sum{font-family:var(--display);font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.claim-sum b{color:var(--work);font-weight:700}
+.claim-sum .all{color:var(--work);font-weight:600}
+.claim{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line)}
+.claim:last-child{border-bottom:0}
+.claim .cm{display:flex;flex-direction:column;min-width:0}
+.claim .cm b{font-weight:600}
+.claim .cm span{font-size:12.5px;color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.claim .cm .warn{color:var(--fast);font-weight:500}
+.claim .ca{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums}
+.claim.done .cm b,.claim.done .ca{color:var(--muted)}
+.claim.done .ca{text-decoration:line-through;text-decoration-thickness:1.5px}
+.claim-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.claim-btn:hover{border-color:var(--work)}
+.claim-btn.on{background:color-mix(in srgb,var(--work) 16%,transparent);border-color:transparent;color:var(--work)}
+.claim-btn svg{width:14px;height:14px}
+.claim.more .claim-btn{border-color:var(--fast)}
+#nameBox small{font-weight:400}
 .rates{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .rates:empty{display:none}
 .rate{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:9px 8px 9px 12px;background:var(--surface-2)}
@@ -338,12 +357,21 @@ button{font:inherit;color:inherit}
         <button type="button" id="m-cost" aria-pressed="true">Spend</button>
         <button type="button" id="m-kwh" aria-pressed="false">Energy</button>
         <button type="button" id="m-dist" aria-pressed="false">Distance</button>
+        <button type="button" id="m-eff" aria-pressed="false">Efficiency</button>
       </div>
     </div>
     <div class="yearsum" id="yearSum"></div>
     <div class="chartkey" id="chartKey" hidden></div>
     <div class="chartwrap"><div id="chart"></div><div class="tip" id="tip" role="status" hidden></div></div>
     <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="panel claims" id="claimPanel" aria-labelledby="claimTitle" hidden>
+    <div class="panel-head">
+      <h2 id="claimTitle">Work claims</h2>
+      <span class="claim-sum" id="claimSum"></span>
+    </div>
+    <div id="claimList"></div>
   </section>
 
   <section class="panel" aria-labelledby="logTitle">
@@ -456,6 +484,7 @@ button{font:inherit;color:inherit}
       <div class="carnames" id="carNames"></div>
       <p class="hint">Rename a car here, or type a name in the empty box to add another car.</p>
     </div>
+    <label class="fld" id="nameBox" hidden><span>Your name</span><input type="text" id="s-name" autocomplete="off" maxlength="30" placeholder="e.g. Dad"><small class="hint">Shown on charges you log, so you can both see who added what.</small></label>
     <div class="fld" id="acctBox" hidden><span>Sync account</span>
       <div class="acct"><span id="acctEmail"></span><button type="button" class="btn ghost" id="signOutBtn">Sign out</button></div>
     </div>
@@ -521,12 +550,19 @@ const Store = {
       delete: async () => { const s = S.read(); s.charges = s.charges.filter(c => c.id !== id); S.write(s); },
     }),
   }; },
-  doc() { const S = this; return { set: async d => { const s = S.read(); s.settings = d; S.write(s); } }; },
+  doc() { const S = this; return {
+    set: async d => { const s = S.read(); s.settings = d; S.write(s); },
+    // one level deep, like Firestore's merge for the maps used here (people, claimed)
+    merge: async d => { const s = S.read(); const o = { ...s.settings };
+      for (const [k, v] of Object.entries(d)) o[k] = v && typeof v === "object" && !Array.isArray(v) ? { ...(o[k] || {}), ...v } : v;
+      s.settings = o; S.write(s); },
+  }; },
 };
 try { const t = "__t"; localStorage.setItem(t, "1"); localStorage.removeItem(t); } catch { Store.ok = false; }
 let charges = [], settings = { ...DEFAULTS };
 let filter = "all", metric = "cost", editingId = null;
-let previewStyle = null;   // chart style being previewed in Settings, until saved or cancelled
+let previewStyle = null;
+let me = null, myEmail = "";   // signed-in login (sync only)   // chart style being previewed in Settings, until saved or cancelled
 let carSel = (() => { try { return localStorage.getItem("chargelog.car") || "all"; } catch { return "all"; } })();
 let yearSel = (() => { try { return localStorage.getItem("chargelog.year") || ""; } catch { return ""; } })();
 
@@ -589,11 +625,13 @@ function efficiency(list) {
   return dist > 0 && kwh > 0 ? { kwh, dist, cost } : null;
 }
 function mergeCars(a, b) { const out = [...(Array.isArray(a) ? a : [])]; for (const c of Array.isArray(b) ? b : []) if (c && c.id && !out.some(x => x.id === c.id)) out.push(c); return out; }
+const emailName = e => { const p = String(e || "").split("@")[0].split(/[._\-+]/)[0]; return p ? p[0].toUpperCase() + p.slice(1) : "Someone"; };
+const personName = uid => ((settings.people || {})[uid] || "").trim();
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "car";
 function sums(list) { let kwh = 0, cost = 0, kwhPriced = 0; for (const c of list) { kwh += c.kwh || 0; const k = costOf(c); if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; } } return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length }; }
 
 /* ---------- render ---------- */
-function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderList(); }
+function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderClaims(); renderList(); }
 
 /* year view: the chart, its totals, the legend and the charge list all show one calendar year */
 const thisYear = () => todayISO().slice(0, 4);
@@ -670,17 +708,45 @@ function renderStats() {
 
 function niceStep(x) { if (x <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); const n = x / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
 
-const METRICS = { cost: "spend", kwh: "energy", dist: "distance" };
+const METRICS = { cost: "spend", kwh: "energy", dist: "distance", eff: "efficiency" };
 function fmtMetric(v, short) {
   if (metric === "cost") return short ? (curSymbol().length <= 2 ? curSymbol() : "") + nf(v, v > 0 && v < 10 && short === "fine" ? 1 : 0) : money(v);
   if (metric === "kwh") return short ? nf(v, 0) : nf(v, 1) + " kWh";
+  if (metric === "eff") return settings.unit === "mi" ? (short ? nf(v, 1) : nf(v, 2) + " mi/kWh") : (short ? nf(v, 0) : nf(v, 1) + " kWh/100 km");
   return short ? nf(v, 0) : nf(v, 0) + " " + distU();
 }
 
 // Builds the chart's series for the chosen year: by charger type for spend/energy bars,
 // per car when several cars are shown together, otherwise one total.
+const effOf = (num, den) => den > 0 && num > 0 ? (settings.unit === "mi" ? den / num : num / den * 100) : 0;
+// Efficiency per month and car. A charge's energy replaces what was used since the previous charge,
+// so kWh is matched with the distance since then. Charges logged with an unchanged odometer pass
+// their energy on to the next charge that has a distance, so a missed reading doesn't spike a month.
+function effSeries(months) {
+  const idx = Object.fromEntries(months.map((m, i) => [m, i]));
+  const byCarGroups = multiCar() && carSel === "all";
+  const groups = byCarGroups ? cars().map((c, i) => ({ key: c.id, label: c.name, cls: "s" + (i % 3) }))
+    : [{ key: "all", label: "Efficiency", cls: "s0" }];
+  for (const g of groups) { g.num = months.map(() => 0); g.den = months.map(() => 0); }
+  for (const grp of byCar(vc())) {
+    const w = byOdo(grp); let pend = 0;
+    for (let j = 1; j < w.length; j++) {
+      pend += w[j].kwh || 0;
+      const d = w[j].odo - w[j - 1].odo; if (d <= 0) continue;
+      const i = idx[ym(w[j].date || "")];
+      const g = groups.find(x => x.key === (byCarGroups ? carOf(w[j]) : "all"));
+      if (i !== undefined && g) { g.num[i] += pend; g.den[i] += d; }
+      pend = 0;
+    }
+  }
+  for (const g of groups) g.v = months.map((_, i) => effOf(g.num[i], g.den[i]));
+  return groups;
+}
+
 function chartSeries(styleOverride) {
   const months = Array.from({ length: 12 }, (_, i) => `${yearSel}-${String(i + 1).padStart(2, "0")}`);
+  const lastIdx0 = yearSel === thisYear() ? Number(todayISO().slice(5, 7)) - 1 : 11;
+  if (metric === "eff") return { months, groups: effSeries(months), style: "lines", lastIdx: lastIdx0, eff: true };
   const style = (typeof styleOverride === "string" && styleOverride) || previewStyle || settings.chartStyle || "bars";
   const ds = metric === "dist" ? distSince() : null;
   const val = c => metric === "cost" ? (costOf(c) || 0) : metric === "kwh" ? (c.kwh || 0) : Math.max(0, ds[c.id] || 0);
@@ -706,9 +772,11 @@ function chartSeries(styleOverride) {
 
 function renderChart(styleOverride) {
   const box = $("#chart");
-  const { months, groups, style, lastIdx } = chartSeries(styleOverride);
+  const { months, groups, style, lastIdx, eff } = chartSeries(styleOverride);
   const stacked = style === "bars";
-  const totals = months.map((_, i) => groups.reduce((a, g) => a + g.v[i], 0));
+  const totals = eff
+    ? months.map((_, i) => effOf(groups.reduce((a, g) => a + g.num[i], 0), groups.reduce((a, g) => a + g.den[i], 0)))
+    : months.map((_, i) => groups.reduce((a, g) => a + g.v[i], 0));
   const max = stacked ? Math.max(0, ...totals) : Math.max(0, ...groups.flatMap(g => g.v));
   const key = $("#chartKey");
   key.hidden = stacked && metric !== "dist" || groups.length < 2;
@@ -744,7 +812,7 @@ function renderChart(styleOverride) {
     for (const g of groups) {
       // start each line at its first month with data (a car bought mid-year doesn't sit on zero before then)
       const first = g.v.findIndex(v => v > 0); if (first < 0 || first > lastIdx) continue;
-      const pts = g.v.slice(0, lastIdx + 1).map((v, i) => [cx(i), y(v), i]).slice(first);
+      const pts = g.v.slice(0, lastIdx + 1).map((v, i) => [cx(i), y(v), i]).slice(first).filter(p => !eff || g.v[p[2]] > 0);   // efficiency: skip months without data
       const line = pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
       if (style === "area" || style === "cumulative")
         s += `<polygon class="area f-${g.cls}" points="${pts[0][0].toFixed(1)},${y(0).toFixed(1)} ${line} ${pts[pts.length - 1][0].toFixed(1)},${y(0).toFixed(1)}"/>`;
@@ -758,9 +826,41 @@ function renderChart(styleOverride) {
     s += `<text data-lbl="${i}" x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="middle"${k === cur ? ' class="cur"' : ""}>${esc(monthName(k, { month: narrow ? "narrow" : "short" }))}</text>`;
   });
   box.innerHTML = s + "</svg>";
-  chartState = { months, groups, totals, style, W, slot, pad, cx };
+  chartState = { months, groups, totals, style, W, slot, pad, cx, eff };
   hideTip();
 }
+
+/* ---------- work claims: months of Work charges, ticked off once paid back ----------
+   settings.claimed = { "YYYY-MM": amount claimed }. Comparing with today's amount shows charges added after claiming. */
+const claimedOf = k => { const v = (settings.claimed || {})[k]; return isNum(v) ? v : null; };
+function renderClaims() {
+  const panel = $("#claimPanel");
+  const list = charges.filter(c => c.type === "work" && inYear(c));   // claims cover both cars
+  panel.hidden = !loaded || !list.length;
+  if (panel.hidden) return;
+  const groups = {}; for (const c of list) (groups[ym(c.date)] ||= []).push(c);
+  let owed = 0;
+  $("#claimList").innerHTML = Object.keys(groups).sort().reverse().map(k => {
+    const s = sums(groups[k]), amt = Math.round(s.cost * 100) / 100, cl = claimedOf(k);
+    const extra = cl != null ? Math.round((amt - cl) * 100) / 100 : 0;
+    const state = cl == null ? "open" : extra > 0.004 ? "more" : "done";
+    owed += state === "open" ? amt : state === "more" ? extra : 0;
+    const sub = `${s.n} charge${s.n === 1 ? "" : "s"} · ${nf(s.kwh, 1)} kWh` + (state === "more" ? ` · <b class="warn">${money(extra)} added since claimed</b>` : "");
+    const btn = state === "done"
+      ? `<button type="button" class="claim-btn on" data-claim="${k}" data-amt="${amt}" aria-pressed="true" title="Tap to mark as not claimed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg>Claimed</button>`
+      : `<button type="button" class="claim-btn" data-claim="${k}" data-amt="${amt}" aria-pressed="false">${state === "more" ? "Claim again" : "Mark claimed"}</button>`;
+    return `<div class="claim ${state}"><span class="cm"><b>${esc(monthName(k))}</b><span>${sub}</span></span><span class="ca">${money(amt)}</span>${btn}</div>`;
+  }).join("");
+  $("#claimSum").innerHTML = owed > 0.004 ? `<b>${money(owed)}</b> to claim` : `<span class="all">All claimed</span>`;
+}
+$("#claimList").addEventListener("click", e => {
+  const b = e.target.closest("button[data-claim]"); if (!b || !db) return;
+  const k = b.dataset.claim, on = b.getAttribute("aria-pressed") === "true";
+  const val = on ? null : Number(b.dataset.amt);
+  settings = { ...settings, claimed: { ...(settings.claimed || {}), [k]: val } }; renderClaims();   // show it straight away
+  run(() => db.doc("settings/main").merge({ claimed: { [k]: val } }), "That didn't save");
+  toast(on ? `${monthName(k)} marked as not claimed` : `${monthName(k)} marked as claimed`);
+});
 
 /* ---------- chart hover card ---------- */
 let chartState = null, tipIdx = -1;
@@ -777,7 +877,7 @@ function showTip(i) {
   const rows = st.groups.filter(g => g.v[i] > 0);
   const showRows = st.groups.length > 1 && rows.length > 0;
   const head = cum ? `${monthName(k, { month: "long" })} · year so far` : monthName(k);
-  const bigLabel = cum ? `${METRICS[metric]} so far` : METRICS[metric];
+  const bigLabel = cum ? `${METRICS[metric]} so far` : st.eff ? (st.groups.length > 1 ? "efficiency, both cars" : "efficiency") : METRICS[metric];
   const foot = ms.n
     ? [`<b>${nf(ms.n)}</b> charge${ms.n === 1 ? "" : "s"}`,
        (cum || metric !== "kwh") ? `<b>${nf(ms.kwh, 0)}</b> kWh` : "",
@@ -788,6 +888,7 @@ function showTip(i) {
   tip.innerHTML = `<div class="t-head">${esc(head)}</div>
     <div class="t-big">${st.totals[i] > 0 ? fmtMetric(st.totals[i]) : "–"}</div><div class="t-sub">${esc(bigLabel)}</div>
     ${showRows ? `<div class="t-rows">${rows.map(g => {
+      if (st.eff) return `<div class="t-row"><i class="sw bg-${g.cls}"></i><span>${esc(g.label)}</span><b>${fmtMetric(g.v[i])}</b><em></em></div>`;
       const pct = st.totals[i] > 0 ? Math.round(g.v[i] / st.totals[i] * 100) : 0;
       return `<div class="t-row"><i class="sw bg-${g.cls}"></i><span>${esc(g.label)}</span><b>${fmtMetric(g.v[i])}</b><em>${pct}%</em><s style="--w:${pct}%" class="bg-${g.cls}"></s></div>`;
     }).join("")}</div>` : ""}
@@ -839,7 +940,8 @@ function battHTML(s0, s1) {
 function rowHTML(c, dist, ro) {
   const T = TYPES[c.type] || TYPES.public; const cost = costOf(c);
   const ppk = isNum(cost) && c.kwh > 0 ? cost / c.kwh : null;
-  const meta = [multiCar() && carSel === "all" ? carName(carOf(c)) : null, isNum(c.odo) ? `${nf(c.odo)} ${distU()}` : null, isNum(dist) && dist > 0 ? `+${nf(dist)} ${distU()}` : null].filter(Boolean).join(" · ");
+  const who = c.by && Object.keys(settings.people || {}).length > 1 ? personName(c.by) : "";
+  const meta = [multiCar() && carSel === "all" ? carName(carOf(c)) : null, isNum(c.odo) ? `${nf(c.odo)} ${distU()}` : null, isNum(dist) && dist > 0 ? `+${nf(dist)} ${distU()}` : null, who ? "added by " + who : null].filter(Boolean).map(esc).join(" · ");
   return `<button type="button" class="row${ro ? " ro" : ""}" data-id="${esc(c.id)}"${ro ? ' tabindex="-1"' : ""}>
     <span class="ico t-${c.type}">${T.icon}</span>
     <span class="main">
@@ -949,6 +1051,7 @@ $("#chargeForm").addEventListener("submit", async e => {
   if (Number.isNaN(cost) || (isNum(cost) && cost < 0)) return err("The cost should be a number, for example 8.55.");
   const type = formType();
   const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
+    by: editingId ? ((charges.find(x => x.id === editingId) || {}).by ?? null) : (me || null),
     odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   const hpOn = type === "home" ? homePriceOn(date) : null;
   if (data.cost == null && isNum(hpOn)) data.cost = Math.round(kwh * hpOn * 100) / 100;
@@ -983,6 +1086,7 @@ $("#delBtn").addEventListener("click", async () => {
 function openSettings() {
   $("#s-cur").value = settings.currency; $("#s-unit").value = settings.unit;
   rateDraft = homeRates(); $("#s-home").value = ""; renderRates();
+  $("#nameBox").hidden = !me; $("#s-name").value = me ? (personName(me) || emailName(myEmail)) : "";
   $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
     `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
   $("#carNames").querySelectorAll("input").forEach(i => i.className = "");
@@ -1053,6 +1157,7 @@ $("#setForm").addEventListener("submit", async e => {
   const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrices: rateDraft,
     homePrice: homePriceOn(todayISO(), rateDraft),  // kept for older copies of the app
     cars: readCars(), ...appearanceFromForm() };
+  if (me) next.people = { ...(settings.people || {}), [me]: $("#s-name").value.trim().slice(0, 30) || emailName(myEmail) };
   run(() => db.doc("settings/main").set(next), "Settings didn't save");
   settings = { ...DEFAULTS, ...next };
   closeSheet("#setScrim"); applyUnits(); renderAll(); toast("Settings saved");
@@ -1088,7 +1193,7 @@ $("#list").addEventListener("click", e => {
 document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
   filter = b.dataset.f; document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderList();
 }));
-const METRIC_BTNS = [["#m-cost", "cost"], ["#m-kwh", "kwh"], ["#m-dist", "dist"]];
+const METRIC_BTNS = [["#m-cost", "cost"], ["#m-kwh", "kwh"], ["#m-dist", "dist"], ["#m-eff", "eff"]];
 METRIC_BTNS.forEach(([id, m]) => $(id).addEventListener("click", () => {
   metric = m; METRIC_BTNS.forEach(([bid, bm]) => $(bid).setAttribute("aria-pressed", String(bm === m))); renderChart();
 }));
@@ -1129,7 +1234,7 @@ $("#importFile").addEventListener("change", async e => {
 });
 
 /* ---------- modes: on this device only, or synced through a Firebase account ---------- */
-let unsub = null, cloudTimer = null;
+let unsub = null, cloudTimer = null, registered = false;
 const localSync = () => { if (db !== Store) return; const s = Store.read(); charges = s.charges; settings = { ...DEFAULTS, ...s.settings }; loaded = true; applyUnits(); renderAll(); };
 
 function useLocal() {
@@ -1146,14 +1251,15 @@ function setSync(state) {
 }
 
 function onAuth(user) {
-  clearTimeout(cloudTimer);
+  clearTimeout(cloudTimer); registered = false;
   if (unsub) { unsub(); unsub = null; }
   if (!user) {
-    db = null; canWrite = false; charges = []; loaded = false; setSync(null);
+    db = null; canWrite = false; charges = []; loaded = false; setSync(null); me = null; myEmail = "";
     $("#acctBox").hidden = true; applyWrite(); renderAll();
     $("#gate").hidden = false; return;
   }
   $("#gate").hidden = true; note("");
+  me = user.uid || null; myEmail = user.email || "";
   db = window.Cloud; canWrite = true; Store.onChange = null; loaded = false; setSync("connecting");
   $("#acctBox").hidden = false; $("#acctEmail").textContent = "Signed in as " + user.email + (user.shared ? " · shared charge list" : "");
   $("#backupHint").textContent = "Charges sync to your account on every device. A backup file now and then is still a good idea.";
@@ -1168,7 +1274,11 @@ function onAuth(user) {
   }
   unsub = window.Cloud.subscribe(
     (list, meta) => { charges = list; loaded = true; setSync(meta.hasPendingWrites ? "pending" : meta.fromCache ? "offline" : "synced"); renderAll(); },
-    s => { settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll(); },
+    s => {
+      settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll();
+      // the first time a login is seen, give it a name from its email so its charges can be labelled
+      if (me && !(settings.people || {})[me] && !registered) { registered = true; db.doc("settings/main").merge({ people: { [me]: emailName(myEmail) } }).catch(() => { registered = false; }); }
+    },
     e => { console.error(e); setSync("error"); note("Sync stopped. Close and reopen the app to reconnect."); }
   );
 }

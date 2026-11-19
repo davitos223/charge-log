@@ -31,7 +31,7 @@ if (cfg) {
         add: d => { const r = F.doc(chargesCol()); return F.setDoc(r, d).then(() => ({ id: r.id })); },
         doc: id => ({ set: d => F.setDoc(chargeDoc(id), d), delete: () => F.deleteDoc(chargeDoc(id)) }),
       }),
-      doc: () => ({ set: d => F.setDoc(settingsDoc(), d) }),
+      doc: () => ({ set: d => F.setDoc(settingsDoc(), d), merge: d => F.setDoc(settingsDoc(), d, { merge: true }) }),
       subscribe(onCharges, onSettings, onError) {
         const a = F.onSnapshot(chargesCol(), { includeMetadataChanges: true },
           s => onCharges(s.docs.map(d => ({ ...d.data(), id: d.id })), s.metadata), onError);
@@ -75,7 +75,7 @@ if (cfg) {
     A.onAuthStateChanged(auth, async u => {
       const seq = ++authSeq;
       if (!u) { owner = null; emit("cloud-auth", null); return; }
-      const user = () => ({ email: u.email || "", shared: owner !== u.uid });
+      const user = () => ({ uid: u.uid, email: u.email || "", shared: owner !== u.uid });
       let cached = null; try { cached = localStorage.getItem(cacheKey(u.uid)); } catch {}
       if (cached) { owner = cached; emit("cloud-auth", user()); }   // start straight away, check in the background
       const o = await resolveOwner(u.uid);
