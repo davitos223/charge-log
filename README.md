@@ -17,7 +17,7 @@ Download `ChargeLog.exe` from the [latest release](https://github.com/davitos223
 
 ## Your data and sync
 
-Sign in once on each device with the same Charge Log account, and the phone and PC share one charge list. Charges sync through Firebase (project `charge-log-5a6c4`, Firestore in eur3). Each account can only read and write its own charges (see the rules below), and new accounts can only be added in the Firebase console.
+Sign in once on each device with the same Charge Log account, and the phone and PC share one charge list. Charges sync through Firebase (project `charge-log-5a6c4`, Firestore in eur3). An account can only read and write its own charges, or a list it has been given access to (see below), and new accounts can only be added in the Firebase console.
 
 Charges logged without signal are saved on the device and upload when it's back online. **Settings → Save backup file** still exports everything as a JSON file.
 
