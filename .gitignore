@@ -1,0 +1,5 @@
+desktop/bin/
+desktop/obj/
+desktop/publish/
+charge-log.html
+.claude/
