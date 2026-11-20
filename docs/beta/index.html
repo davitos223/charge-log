@@ -1332,6 +1332,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") document.que
 /* ---------- charge form ---------- */
 const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), loc: $("#f-loc"), notes: $("#f-notes") };
 const formType = () => (document.querySelector('input[name="type"]:checked') || {}).value || "home";
+let confirmSig = null;   // a checked-but-unusual entry the user chose to save anyway
 
 function openForm(c) {
   editingId = c ? c.id : null;
@@ -1352,7 +1353,7 @@ function openForm(c) {
   F.notes.value = c ? (c.notes || "") : "";
   $("#locs").innerHTML = [...new Set(charges.map(x => x.location).filter(Boolean))].map(l => `<option value="${esc(l)}"></option>`).join("");
   const del = $("#delBtn"); del.hidden = !c; del.classList.remove("armed"); del.textContent = "Delete";
-  $("#formErr").hidden = true; $("#saveBtn").disabled = false;
+  $("#formErr").hidden = true; $("#saveBtn").disabled = false; confirmSig = null;
   updatePreview();
   openSheet("#chargeScrim");
   setTimeout(() => (c ? F.kwh : F.kwh).focus(), 50);
@@ -1379,6 +1380,8 @@ function setOdoHint() {
 }
 $("#carPick").addEventListener("change", () => { setOdoHint(); updatePreview(); });
 Object.values(F).forEach(i => i.addEventListener("input", updatePreview));
+// changing the entry after a "check this" message asks again
+[F.date, F.odo, F.kwh].forEach(i => i.addEventListener("input", () => { if (!confirmSig) return; confirmSig = null; $("#formErr").hidden = true; $("#saveBtn").textContent = editingId ? "Save changes" : "Save charge"; }));
 document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener("change", updatePreview));
 
 $("#chargeForm").addEventListener("submit", async e => {
@@ -1396,6 +1399,22 @@ $("#chargeForm").addEventListener("submit", async e => {
     odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   const hpOn = type === "home" ? homePriceOn(date) : null;
   if (data.cost == null && isNum(hpOn)) data.cost = Math.round(kwh * hpOn * 100) / 100;
+  // Likely typos get a second look: they'd quietly throw off distance, efficiency and monthly totals.
+  const warns = [], others = charges.filter(x => carOf(x) === data.car && x.id !== editingId && isNum(x.odo) && x.date);
+  if (date > todayISO()) warns.push(`The date is in the future (${dayLabel(date)}).`);
+  if (isNum(odo)) {
+    const before = others.filter(x => x.date <= date).sort((a, b) => b.odo - a.odo)[0];
+    const after = others.filter(x => x.date > date).sort((a, b) => a.odo - b.odo)[0];
+    if (before && odo < before.odo) warns.push(`The odometer is lower than on ${dayLabel(before.date)} (${nf(before.odo)} ${distU()}).`);
+    else if (after && odo > after.odo) warns.push(`The odometer is higher than on ${dayLabel(after.date)} (${nf(after.odo)} ${distU()}), which is later.`);
+    else if (before && odo - before.odo > 2500) warns.push(`That's ${nf(odo - before.odo)} ${distU()} since the last charge.`);
+  }
+  if (kwh > 100) warns.push(`${nf(kwh, 1)} kWh is more than a full battery.`);
+  const sig = JSON.stringify([data.date, data.car, data.odo, data.kwh]);
+  if (warns.length && confirmSig !== sig) {
+    confirmSig = sig; $("#saveBtn").textContent = "Save anyway";
+    return err(warns.join(" ") + " Check it, or tap Save anyway.");
+  }
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
   const wasEdit = !!editingId;
   run(() => wasEdit
@@ -1498,16 +1517,18 @@ $("#rates").addEventListener("click", e => {
 $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
   if (!addRateFromInputs()) return;               // a price typed but not added yet is added on save
-  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrices: rateDraft,
+  // Only the fields this form edits are written, merged into the shared settings. Writing the whole
+  // settings back would undo anything another phone changed meanwhile (a claim ticked, a name set).
+  const part = { currency: $("#s-cur").value, unit: $("#s-unit").value, homePrices: rateDraft,
     homePrice: homePriceOn(todayISO(), rateDraft),  // kept for older copies of the app
     cars: readCars() };
-  // beta: appearance is saved on this device only; the shared list keeps its own values
+  if (me) part.people = { [me]: $("#s-name").value.trim().slice(0, 30) || emailName(myEmail) };
+  // beta: appearance is saved on this device only, never in the shared settings
   const look = appearanceFromForm();
   try { localStorage.setItem(LOOK_KEY, JSON.stringify(look)); } catch {}
-  for (const k of ["theme", "accent", "chartStyle"]) { if (k in rawSettings) next[k] = rawSettings[k]; else delete next[k]; }
-  if (me) next.people = { ...(settings.people || {}), [me]: $("#s-name").value.trim().slice(0, 30) || emailName(myEmail) };
-  run(() => db.doc("settings/main").set(next), "Settings didn't save");
-  rawSettings = next; settings = { ...DEFAULTS, ...next, ...look };
+  run(() => mergeSettings(part), "Settings didn't save");
+  rawSettings = { ...rawSettings, ...part, people: { ...(rawSettings.people || {}), ...(part.people || {}) } };
+  settings = { ...DEFAULTS, ...rawSettings, ...look };
   closeSheet("#setScrim"); applyUnits(); renderAll(); toast("Settings saved");
 });
 
