@@ -429,7 +429,9 @@ button{font:inherit;color:inherit}
 }
 /* Log button: full width along the bottom on phones */
 @media (max-width:639px){.fab{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));justify-content:center;border-radius:16px;padding:15px 20px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}}
-/* charge form: grab handle, matching car choice, summary card, actions kept in reach */
+/* iPhone Safari gives date fields their own minimum width, height and centred text, so they spill into the next column */
+.fld input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;width:100%;height:calc(1.45em + 22px);line-height:1.45;text-align:left}
+.fld input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.45em}/* charge form: grab handle, matching car choice, summary card, actions kept in reach */
 @media (max-width:639px){.sheet::before{content:"";flex:none;align-self:center;width:40px;height:4px;border-radius:2px;background:var(--line);margin:-8px 0 -4px}}
 .carpick input:checked + span{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
 .preview{padding:0;background:none}
