@@ -24,7 +24,7 @@ if (cfg) {
     const settingsDoc = () => F.doc(fs, "users", owner, "meta", "settings");
 
     window.Cloud = {
-      version: "20261119c",   // must match APP_VERSION in index.html
+      version: "20261120a",   // must match APP_VERSION in index.html
       signIn: (email, pw) => A.signInWithEmailAndPassword(auth, email, pw),
       signOut: () => A.signOut(auth),
       resetPassword: email => A.sendPasswordResetEmail(auth, email),

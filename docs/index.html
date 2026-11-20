@@ -530,13 +530,13 @@ button{font:inherit;color:inherit}
         <label><input type="radio" name="chartStyle" value="horizontal" id="cs-horizontal"><span>Horizontal</span></label>
         <label><input type="radio" name="chartStyle" value="cumulative" id="cs-cumulative"><span>Running total</span></label>
       </div>
-      <p class="hint"><b>Side by side</b> puts each type next to the other, <b>Share</b> shows each month as 100%, and <b>Running total</b> adds each month to the last, like the Charts tab in the spreadsheet.</p>
+      <p class="hint"><b>Side by side</b> puts each type next to the other, <b>Share</b> shows each month as 100%, and <b>Running total</b> adds each month to the last so you can see the year build up.</p>
     </div>
     <div class="fld"><span>Cars</span>
       <div class="carnames" id="carNames"></div>
       <p class="hint">Rename a car here, or type a name in the empty box to add another car.</p>
     </div>
-    <label class="fld" id="nameBox" hidden><span>Your name</span><input type="text" id="s-name" autocomplete="off" maxlength="30" placeholder="e.g. Dad"><small class="hint">Shown on charges you log, so you can both see who added what.</small></label>
+    <label class="fld" id="nameBox" hidden><span>Your name</span><input type="text" id="s-name" autocomplete="off" maxlength="30" placeholder="Your first name"><small class="hint">Shown on charges you log, so you can both see who added what.</small></label>
     <div class="fld" id="acctBox" hidden><span>Sync account</span>
       <div class="acct"><span id="acctEmail"></span><button type="button" class="btn ghost" id="signOutBtn">Sign out</button></div>
     </div>
@@ -584,13 +584,13 @@ button{font:inherit;color:inherit}
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="config.js?v=20261119c"></script>
+<script src="config.js?v=20261120a"></script>
 
 <script>
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const APP_VERSION = "20261119c";   // keep in step with the ?v= on config.js and cloud.js
+const APP_VERSION = "20261120a";   // keep in step with the ?v= on config.js and cloud.js
 const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
 try { const l = JSON.parse(localStorage.getItem("chargelog.look") || "{}"); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
@@ -1313,7 +1313,7 @@ function openSettings() {
   $("#appVer").textContent = APP_VERSION + (cv && cv !== APP_VERSION ? ` · sync file ${cv}: close and reopen the app to finish updating` : "");
   $("#nameBox").hidden = !me; $("#s-name").value = me ? (personName(me) || emailName(myEmail)) : "";
   $("#carNames").innerHTML = [...cars(), { id: "", name: "" }].map((c, i) =>
-    `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name, e.g. VW ID.3"}" autocomplete="off">`).join("");
+    `<input type="text" id="car-${i}" data-id="${esc(c.id)}" value="${esc(c.name)}" placeholder="${c.id ? "" : cars().length ? "Add another car" : "Car name"}" autocomplete="off">`).join("");
   $("#carNames").querySelectorAll("input").forEach(i => i.className = "");
   for (const [name, val] of [["theme", settings.theme], ["accent", settings.accent], ["chartStyle", chartStyleNow(settings.chartStyle)]]) {
     const r = document.querySelector(`input[name="${name}"][value="${val}"]`) || document.querySelector(`input[name="${name}"]`); r.checked = true;
@@ -1547,6 +1547,6 @@ function boot() {
 boot();
 })();
 </script>
-<script type="module" src="cloud.js?v=20261119c"></script>
+<script type="module" src="cloud.js?v=20261120a"></script>
 </body>
 </html>
