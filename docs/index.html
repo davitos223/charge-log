@@ -379,6 +379,91 @@ button{font:inherit;color:inherit}
 .sheet-actions .spacer{flex:1}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+
+/* ---------- layout refresh (2026-11) ---------- */
+/* compact header */
+.app{gap:16px;padding-top:14px}
+.top{gap:10px}
+.mark{width:38px;height:38px;border-radius:11px}
+.mark svg{width:20px;height:20px}
+.brand h1{font-size:19px;display:flex;align-items:center}
+.brand p{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .icon-btn{width:38px;height:38px}
+.carbar button{padding:9px 10px}
+/* stat cards: 2 x 2 on phones, 4 across from tablets up */
+.stats{gap:10px}
+.tile{padding:14px 15px;gap:3px}
+.tile .lbl{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .val,.tile.feature .val{font-size:25px}
+.tile .sub{font-size:13px;line-height:1.35}
+@media (max-width:720px){.tile.feature,.tile:last-child{grid-column:auto}}
+@media (max-width:380px){.tile{padding:12px 13px}.tile .val,.tile.feature .val{font-size:21px}.tile .val small{font-size:12px}.tile .sub{font-size:12.5px}}
+@media (min-width:721px) and (max-width:1099px){.tile .val,.tile.feature .val{font-size:22px}.tile .val small{font-size:12px;margin-left:2px}.yearsum b{font-size:15.5px}.yearsum b small{font-size:11.5px}}
+.delta{font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.delta.down{color:var(--charge)} .delta.up{color:var(--fast)}
+.tile.feature .delta.down{color:#62E0A2} .tile.feature .delta.up{color:#F6BE66}
+/* slightly larger secondary text */
+.r3,.claim .cm span,.leg span,.month span{font-size:13px}
+.chartkey{font-size:13.5px}
+/* chart: months with no charges vs charges that cost nothing */
+#chart .none{stroke:var(--line);stroke-width:3;stroke-linecap:round}
+#chart .zero{fill:var(--muted)}
+/* work claims */
+.claim-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.claim-top div{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.claim-top span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.claim-top b{font-family:var(--display);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.claim-top b small{font-family:var(--body);font-size:12.5px;font-weight:500;color:var(--muted)}
+.claim-top .ok{color:var(--work)} .claim-top .owe{color:var(--fast)}
+.claim-prog{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.claim-prog i{display:block;height:100%;width:0;background:var(--work);border-radius:4px;transition:width .5s ease}
+.claim .cm b::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;vertical-align:1px;background:var(--fast)}
+.claim.done .cm b::before{background:var(--work)}
+@media (max-width:380px){.claim-top b{font-size:16px}.claim-top div{padding:9px 10px}}
+/* phones and the desktop side column: amount above the button, so the month's details get the full width */
+@media (max-width:480px),(min-width:1100px){
+  .claim{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"cm ca" "cm btn";row-gap:6px;column-gap:10px}
+  .claim .cm{grid-area:cm}.claim .ca{grid-area:ca;justify-self:end}.claim .claim-btn{grid-area:btn;justify-self:end}
+  .claim .cm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* Log button: full width along the bottom on phones */
+@media (max-width:639px){.fab{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));justify-content:center;border-radius:16px;padding:15px 20px;bottom:calc(14px + env(safe-area-inset-bottom,0px))}}
+/* iPhone Safari gives date fields their own minimum width, height and centred text, so they spill into the next column */
+.fld input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;width:100%;height:calc(1.45em + 22px);line-height:1.45;text-align:left}
+.fld input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;min-height:1.45em}/* charge form: grab handle, matching car choice, summary card, actions kept in reach */
+@media (max-width:639px){.sheet::before{content:"";flex:none;align-self:center;width:40px;height:4px;border-radius:2px;background:var(--line);margin:-8px 0 -4px}}
+.carpick input:checked + span{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.preview{padding:0;background:none}
+.pv2{display:flex;flex-direction:column;gap:2px;background:var(--feature-bg);color:var(--feature-ink);border-radius:14px;padding:12px 16px}
+.pv2 .lbl{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--feature-muted);display:flex;align-items:center;gap:8px}
+.pv2 .lbl em{font-style:normal;letter-spacing:.04em;font-size:10.5px;background:color-mix(in srgb,var(--feature-ink) 14%,transparent);border-radius:5px;padding:1px 6px}
+.pv2 b{font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+.pv2 .facts{font-size:13px;color:var(--feature-muted);font-variant-numeric:tabular-nums}
+#chargeForm .sheet-actions{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom,0px));z-index:2;background:var(--surface);margin:0 -4px calc(-18px - env(safe-area-inset-bottom,0px));padding:12px 4px calc(16px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+@media (max-width:639px){#chargeForm .sheet-actions #saveBtn{flex:1;padding:14px 18px;font-size:16px}#chargeForm .sheet-actions .spacer{display:none}}
+/* month page: sections as cards, amounts lined up on the right */
+.m-stats .m-tile.big .m-avg{margin-top:6px;padding-top:8px;border-top:1px solid color-mix(in srgb,var(--feature-ink) 14%,transparent);font-size:13px;color:var(--feature-muted)}
+.m-avg b,.m-avg{font-variant-numeric:tabular-nums}
+.m-tile.big .m-avg small{font-size:12px;margin-left:2px}
+.m-tile.big .m-avg .d.flat{color:var(--feature-ink)}
+@media (min-width:521px){.m-tile.big{grid-row:span 2;justify-content:center}}
+.m-sec{background:var(--surface-2);border-radius:16px;padding:14px 14px 6px}
+.m-sec h3{font-size:12px}
+.m-sec .m-bar{margin-bottom:2px}
+.m-sec .claim{padding:4px 0 10px;border-bottom:0}
+.m-list .row{padding:12px 2px}
+.m-list .row:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+@media (max-width:520px){.m-row{grid-template-columns:10px minmax(0,1fr) auto 36px}.m-row em{grid-column:2/-1}}
+/* desktop: wider, chart and work claims side by side */
+@media (min-width:1100px){
+  .app{max-width:1240px;display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:start;gap:20px}
+  .app > *{grid-column:1/-1}
+  .app > .chart-panel{grid-column:1}
+  .app > #claimPanel{grid-column:2;align-self:stretch;contain:size}
+  .app:has(> #claimPanel[hidden]) > .chart-panel{grid-column:1/-1}
+  #claimPanel #claimList{flex:1;min-height:0;overflow:auto;margin-right:-6px;padding-right:6px}
+  .fab{right:max(20px,calc((100vw - 1240px) / 2 + 16px))}
+}
 </style>
 </head>
 <body>
@@ -401,7 +486,7 @@ button{font:inherit;color:inherit}
 
   <section class="stats" id="stats" aria-label="Summary"></section>
 
-  <section class="panel" aria-labelledby="chartTitle">
+  <section class="panel chart-panel" aria-labelledby="chartTitle">
     <div class="panel-head">
       <h2 id="chartTitle"><select id="yearPick" class="yearpick" aria-label="Year"></select></h2>
       <div class="seg-mini" role="group" aria-label="Chart shows">
@@ -422,6 +507,8 @@ button{font:inherit;color:inherit}
       <h2 id="claimTitle">Work claims</h2>
       <span class="claim-sum" id="claimSum"></span>
     </div>
+    <div class="claim-top" id="claimTop"></div>
+    <div class="claim-prog" id="claimProg" aria-hidden="true"><i></i></div>
     <div id="claimList"></div>
   </section>
 
@@ -584,16 +671,20 @@ button{font:inherit;color:inherit}
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="config.js?v=20261120a"></script>
+<script src="config.js?v=20261120b"></script>
 
 <script>
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const APP_VERSION = "20261120a";   // keep in step with the ?v= on config.js and cloud.js
+const APP_VERSION = "20261120b";   // keep in step with the ?v= on config.js and cloud.js
 const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
-try { const l = JSON.parse(localStorage.getItem("chargelog.look") || "{}"); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
+// last theme/colour, so the page doesn't flash before settings load
+const LOOK_KEY = "chargelog.look";
+function savedLook() { try { const l = JSON.parse(localStorage.getItem(LOOK_KEY) || "{}"); const o = {}; for (const k of ["theme", "accent", "chartStyle"]) if (typeof l[k] === "string") o[k] = l[k]; return o; } catch { return {}; } }
+let rawSettings = {};   // settings exactly as stored in the shared list
+try { const l = savedLook(); if (l.theme === "light" || l.theme === "dark") document.documentElement.dataset.theme = l.theme; if (l.accent && l.accent !== "teal") document.documentElement.dataset.accent = l.accent; } catch {}
 const TYPES = {
   home:   { label: "Home",    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>' },
   public: { label: "Public",  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/></svg>' },
@@ -758,13 +849,18 @@ function renderStats() {
     effSub = `${money(eff.cost / eff.dist * 100)} per 100 ${distU()}`;
   }
   const dash = !loaded ? "…" : null;
+  const pName = monthName(prev, { month: "long" });
+  // spending less than last month is good (green), more is amber
+  let spendSub = `${money(p.cost)} in ${esc(pName)}`;
+  if (p.cost > 0 && m.n) { const d = (m.cost - p.cost) / p.cost * 100, r = Math.round(Math.abs(d));
+    spendSub = r === 0 ? `Same as ${esc(pName)}` : `<span class="delta ${d < 0 ? "down" : "up"}">${d < 0 ? "↓" : "↑"} ${r}%</span> vs ${esc(pName)}`; }
   $("#stats").innerHTML = `
-    <div class="tile feature"><span class="lbl">Spent in ${esc(mName)}</span>
+    <div class="tile feature"><span class="lbl">Spent · ${esc(mName)}</span>
       <span class="val">${dash || money(m.cost)}</span>
-      <span class="sub">${loaded ? `${nf(m.n)} charge${m.n === 1 ? "" : "s"} · ${money(p.cost)} last month` : "Loading"}</span></div>
-    <div class="tile"><span class="lbl">Energy in ${esc(mName)}</span>
+      <span class="sub">${loaded ? spendSub : "Loading"}</span></div>
+    <div class="tile"><span class="lbl">Energy · ${esc(mName)}</span>
       <span class="val">${dash || nf(m.kwh, 0)}<small>kWh</small></span>
-      <span class="sub">${nf(all.kwh, 0)} kWh all time</span></div>
+      <span class="sub">${loaded ? `${nf(m.n)} charge${m.n === 1 ? "" : "s"} this month` : ""}</span></div>
     <div class="tile"><span class="lbl">Average price</span>
       <span class="val">${dash || money(all.avg, 3)}<small>/kWh</small></span>
       <span class="sub">${money(all.cost)} spent all time</span></div>
@@ -936,6 +1032,17 @@ function renderChart(styleOverride) {
       });
     });
   }
+  // months so far with nothing to show: a dot if charges were logged (e.g. free), a dash if none were
+  if (style !== "cumulative") {
+    const cnt = months.map(() => 0), mi = Object.fromEntries(months.map((m, i) => [m, i]));
+    for (const c of vc()) { const i = mi[ym(c.date || "")]; if (i !== undefined) cnt[i]++; }
+    months.forEach((k, i) => {
+      if (i > lastIdx || totals[i] > 0) return;
+      const bx = cx(i), by = y(0);
+      s += cnt[i] ? `<circle class="zero" cx="${bx.toFixed(1)}" cy="${(by - 4).toFixed(1)}" r="3"><title>Charges logged, nothing to show</title></circle>`
+                  : `<line class="none" x1="${(bx - 6).toFixed(1)}" x2="${(bx + 6).toFixed(1)}" y1="${(by - 2).toFixed(1)}" y2="${(by - 2).toFixed(1)}"><title>No charges</title></line>`;
+    });
+  }
   // dashed line at the average month (months with data so far)
   if (!share && style !== "cumulative" && (stack || eff) && avg > 0 && withData.length > 1) {
     const ya = y(avg).toFixed(1);
@@ -969,12 +1076,13 @@ function renderClaims() {
   panel.hidden = !loaded || !list.length;
   if (panel.hidden) return;
   const groups = {}; for (const c of list) (groups[ym(c.date)] ||= []).push(c);
-  let owed = 0;
+  let owed = 0, paid = 0, nDone = 0;
   $("#claimList").innerHTML = Object.keys(groups).sort().reverse().map(k => {
     const s = sums(groups[k]), amt = Math.round(s.cost * 100) / 100, cl = claimedOf(k);
     const extra = cl != null ? Math.round((amt - cl) * 100) / 100 : 0;
     const state = cl == null ? "open" : extra > 0.004 ? "more" : "done";
     owed += state === "open" ? amt : state === "more" ? extra : 0;
+    if (cl != null) paid += Math.min(cl, amt); if (state === "done") nDone++;
     const sub = `${s.n} charge${s.n === 1 ? "" : "s"} · ${nf(s.kwh, 1)} kWh` + (state === "more" ? ` · <b class="warn">${money(extra)} added since claimed</b>` : "");
     const btn = state === "done"
       ? `<button type="button" class="claim-btn on" data-claim="${k}" data-amt="${amt}" aria-pressed="true" title="Tap to mark as not claimed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17 19 7"/></svg>Claimed</button>`
@@ -982,6 +1090,12 @@ function renderClaims() {
     return `<div class="claim ${state}"><span class="cm"><b>${esc(monthName(k))}</b><span>${sub}</span></span><span class="ca">${money(amt)}</span>${btn}</div>`;
   }).join("");
   $("#claimSum").innerHTML = owed > 0.004 ? `<b>${money(owed)}</b> to claim` : `<span class="all">All claimed</span>`;
+  const nMonths = Object.keys(groups).length, pct = paid + owed > 0 ? paid / (paid + owed) * 100 : 100;
+  $("#claimTop").innerHTML = `
+    <div><span>Claimed</span><b class="ok">${money(paid)}</b></div>
+    <div><span>To claim</span><b class="${owed > 0.004 ? "owe" : ""}">${money(owed)}</b></div>
+    <div><span>Months</span><b>${nDone}<small> of ${nMonths}</small></b></div>`;
+  $("#claimProg").firstElementChild.style.width = pct.toFixed(1) + "%";
 }
 function claimClick(e) {
   const b = e.target.closest("button[data-claim]"); if (!b || !db) return;
@@ -1094,10 +1208,12 @@ function renderMonth() {
     const cls = pct === 0 || !better ? "flat" : (pct < 0) === (better === "lower") ? "good" : "bad";
     return `<span class="d ${cls}">${pct > 0 ? "▲" : pct < 0 ? "▼" : "="} ${Math.abs(pct)}%</span> vs ${esc(name)}`;
   };
-  const tiles = ["cost", "kwh", "dist", "eff", "n", "avg"].map(key => {
+  // average price lives in the Spent card, so the other four make a tidy 2 x 2
+  const tiles = ["cost", "kwh", "dist", "eff", "n"].map(key => {
     const K = MONTH_KINDS[key];
     const d1 = delta(key, m, p, monthName(prevK, { month: "short" })), d2 = delta(key, m, ly, monthName(lyK, { month: "short", year: "numeric" }));
-    return `<div class="m-tile${key === "cost" ? " big" : ""}"><span class="lbl">${K.label}</span><b>${m.n || key === "n" ? K.fmt(val(m, key)) : "–"}</b>${d1 ? `<span class="dl">${d1}</span>` : ""}${d2 ? `<span class="dl">${d2}</span>` : ""}</div>`;
+    const avgLine = key === "cost" && m.n && m.avg != null ? `<span class="m-avg">${money(m.avg, 3)}<small>/kWh average</small>${delta("avg", m, p, monthName(prevK, { month: "short" })) ? " · " + delta("avg", m, p, monthName(prevK, { month: "short" })) : ""}</span>` : "";
+    return `<div class="m-tile${key === "cost" ? " big" : ""}"><span class="lbl">${K.label}</span><b>${m.n || key === "n" ? K.fmt(val(m, key)) : "–"}</b>${d1 ? `<span class="dl">${d1}</span>` : ""}${d2 ? `<span class="dl">${d2}</span>` : ""}${avgLine}</div>`;
   }).join("");
   // split by charger type (by cost, or by energy when nothing has a cost)
   const byCost = m.cost > 0, total = byCost ? m.cost : m.kwh;
@@ -1129,7 +1245,7 @@ function renderMonth() {
     : `<div class="empty"><p>No charges in ${esc(monthName(k, { month: "long", year: "numeric" }))}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`;
   $("#mBody").innerHTML = `<div class="m-stats">${tiles}</div>${split}${carsSec}${workSec}${list}`;
 }
-const stepMonth = n => { const btn = n < 0 ? $("#mPrev") : $("#mNext"); if (btn.disabled) return; monthKey = ymAdd(monthKey, n); renderMonth(); $("#mBody").scrollTop = 0; };
+const stepMonth = n => { const btn = n < 0 ? $("#mPrev") : $("#mNext"); if (btn.disabled) return; monthKey = ymAdd(monthKey, n); renderMonth(); $(".month-sheet").scrollTop = 0; };
 $("#mPrev").addEventListener("click", () => stepMonth(-1));
 $("#mNext").addEventListener("click", () => stepMonth(1));
 document.addEventListener("keydown", e => {
@@ -1218,6 +1334,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") document.que
 /* ---------- charge form ---------- */
 const F = { date: $("#f-date"), odo: $("#f-odo"), kwh: $("#f-kwh"), cost: $("#f-cost"), loc: $("#f-loc"), notes: $("#f-notes") };
 const formType = () => (document.querySelector('input[name="type"]:checked') || {}).value || "home";
+let confirmSig = null;   // a checked-but-unusual entry the user chose to save anyway
 
 function openForm(c) {
   editingId = c ? c.id : null;
@@ -1238,7 +1355,7 @@ function openForm(c) {
   F.notes.value = c ? (c.notes || "") : "";
   $("#locs").innerHTML = [...new Set(charges.map(x => x.location).filter(Boolean))].map(l => `<option value="${esc(l)}"></option>`).join("");
   const del = $("#delBtn"); del.hidden = !c; del.classList.remove("armed"); del.textContent = "Delete";
-  $("#formErr").hidden = true; $("#saveBtn").disabled = false;
+  $("#formErr").hidden = true; $("#saveBtn").disabled = false; confirmSig = null;
   updatePreview();
   openSheet("#chargeScrim");
   setTimeout(() => (c ? F.kwh : F.kwh).focus(), 50);
@@ -1250,7 +1367,12 @@ function updatePreview() {
   const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * hp : null);
   F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * hp, 2)}` : "0.00";
   const ppk = isNum(effCost) && kwh > 0 ? effCost / kwh : null;
-  $("#preview").innerHTML = `<div class="pv"><span>Price <b>${ppk != null ? money(ppk, 3) + "/kWh" : "–"}</b></span><span>Cost <b>${money(effCost)}</b>${!isNum(cost) && isNum(effCost) ? " (home rate)" : ""}</span></div>`;
+  // distance since this car's previous charge, from the odometer typed in
+  const odo = parseInt0(F.odo.value), w = byOdo(charges.filter(x => carOf(x) === formCar() && x.id !== editingId));   // same reading as the odometer hint
+  const last = w[w.length - 1], gap = isNum(odo) && last && odo > last.odo ? odo - last.odo : null;
+  const facts = [isNum(kwh) && kwh > 0 ? `${nf(kwh, 1)} kWh` : null, ppk != null ? `${money(ppk, 3)}/kWh` : null, gap ? `+${nf(gap)} ${distU()} since last charge` : null].filter(Boolean);
+  $("#preview").innerHTML = `<div class="pv2"><span class="lbl">This charge${!isNum(cost) && isNum(effCost) ? ' <em>home rate</em>' : ""}</span>
+    <b>${isNum(effCost) ? money(effCost) : "–"}</b><span class="facts">${facts.length ? facts.map(esc).join(" · ") : "Fill in the energy and cost to see the price per kWh"}</span></div>`;
 }
 const formCar = () => (document.querySelector('input[name="car"]:checked') || {}).value || firstCar();
 function setOdoHint() {
@@ -1258,8 +1380,10 @@ function setOdoHint() {
   const last = w[w.length - 1];
   F.odo.placeholder = last ? `last: ${nf(last.odo)}` : "";
 }
-$("#carPick").addEventListener("change", setOdoHint);
+$("#carPick").addEventListener("change", () => { setOdoHint(); updatePreview(); });
 Object.values(F).forEach(i => i.addEventListener("input", updatePreview));
+// changing the entry after a "check this" message asks again
+[F.date, F.odo, F.kwh].forEach(i => i.addEventListener("input", () => { if (!confirmSig) return; confirmSig = null; $("#formErr").hidden = true; $("#saveBtn").textContent = editingId ? "Save changes" : "Save charge"; }));
 document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener("change", updatePreview));
 
 $("#chargeForm").addEventListener("submit", async e => {
@@ -1277,6 +1401,22 @@ $("#chargeForm").addEventListener("submit", async e => {
     odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
   const hpOn = type === "home" ? homePriceOn(date) : null;
   if (data.cost == null && isNum(hpOn)) data.cost = Math.round(kwh * hpOn * 100) / 100;
+  // Likely typos get a second look: they'd quietly throw off distance, efficiency and monthly totals.
+  const warns = [], others = charges.filter(x => carOf(x) === data.car && x.id !== editingId && isNum(x.odo) && x.date);
+  if (date > todayISO()) warns.push(`The date is in the future (${dayLabel(date)}).`);
+  if (isNum(odo)) {
+    const before = others.filter(x => x.date <= date).sort((a, b) => b.odo - a.odo)[0];
+    const after = others.filter(x => x.date > date).sort((a, b) => a.odo - b.odo)[0];
+    if (before && odo < before.odo) warns.push(`The odometer is lower than on ${dayLabel(before.date)} (${nf(before.odo)} ${distU()}).`);
+    else if (after && odo > after.odo) warns.push(`The odometer is higher than on ${dayLabel(after.date)} (${nf(after.odo)} ${distU()}), which is later.`);
+    else if (before && odo - before.odo > 2500) warns.push(`That's ${nf(odo - before.odo)} ${distU()} since the last charge.`);
+  }
+  if (kwh > 100) warns.push(`${nf(kwh, 1)} kWh is more than a full battery.`);
+  const sig = JSON.stringify([data.date, data.car, data.odo, data.kwh]);
+  if (warns.length && confirmSig !== sig) {
+    confirmSig = sig; $("#saveBtn").textContent = "Save anyway";
+    return err(warns.join(" ") + " Check it, or tap Save anyway.");
+  }
   // Don't wait for the network: synced saves land in the offline cache at once and upload when there's signal.
   const wasEdit = !!editingId;
   run(() => wasEdit
@@ -1333,7 +1473,7 @@ function applyAppearance(a = settings) {
   const r = document.documentElement;
   if (a.theme === "light" || a.theme === "dark") r.dataset.theme = a.theme; else delete r.dataset.theme;
   if (a.accent && a.accent !== "teal") r.dataset.accent = a.accent; else delete r.dataset.accent;
-  try { localStorage.setItem("chargelog.look", JSON.stringify({ theme: a.theme, accent: a.accent })); } catch {}
+  try { localStorage.setItem(LOOK_KEY, JSON.stringify({ theme: a.theme, accent: a.accent })); } catch {}
 }
 function readCars() {
   const out = [];
@@ -1379,12 +1519,16 @@ $("#rates").addEventListener("click", e => {
 $("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
   if (!addRateFromInputs()) return;               // a price typed but not added yet is added on save
-  const next = { ...settings, currency: $("#s-cur").value, unit: $("#s-unit").value, homePrices: rateDraft,
+  // Only the fields this form edits are written, merged into the shared settings. Writing the whole
+  // settings back would undo anything another phone changed meanwhile (a claim ticked, a name set).
+  const part = { currency: $("#s-cur").value, unit: $("#s-unit").value, homePrices: rateDraft,
     homePrice: homePriceOn(todayISO(), rateDraft),  // kept for older copies of the app
-    cars: readCars(), ...appearanceFromForm() };
-  if (me) next.people = { ...(settings.people || {}), [me]: $("#s-name").value.trim().slice(0, 30) || emailName(myEmail) };
-  run(() => db.doc("settings/main").set(next), "Settings didn't save");
-  settings = { ...DEFAULTS, ...next };
+    cars: readCars() };
+  if (me) part.people = { [me]: $("#s-name").value.trim().slice(0, 30) || emailName(myEmail) };
+  Object.assign(part, appearanceFromForm());       // theme, colour and chart style
+  run(() => mergeSettings(part), "Settings didn't save");
+  rawSettings = { ...rawSettings, ...part, people: { ...(rawSettings.people || {}), ...(part.people || {}) } };
+  settings = { ...DEFAULTS, ...rawSettings };
   closeSheet("#setScrim"); applyUnits(); renderAll(); toast("Settings saved");
 });
 
@@ -1460,7 +1604,7 @@ $("#importFile").addEventListener("change", async e => {
 
 /* ---------- modes: on this device only, or synced through a Firebase account ---------- */
 let unsub = null, cloudTimer = null, registered = false;
-const localSync = () => { if (db !== Store) return; const s = Store.read(); charges = s.charges; settings = { ...DEFAULTS, ...s.settings }; loaded = true; applyUnits(); renderAll(); };
+const localSync = () => { if (db !== Store) return; const s = Store.read(); charges = s.charges; rawSettings = s.settings; settings = { ...DEFAULTS, ...s.settings }; loaded = true; applyUnits(); renderAll(); };
 
 function useLocal() {
   db = Store; canWrite = true; Store.onChange = localSync;
@@ -1500,7 +1644,7 @@ function onAuth(user) {
   unsub = window.Cloud.subscribe(
     (list, meta) => { charges = list; loaded = true; setSync(meta.hasPendingWrites ? "pending" : meta.fromCache ? "offline" : "synced"); renderAll(); },
     s => {
-      settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll();
+      rawSettings = s; settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll();
       // the first time a login is seen, give it a name from its email so its charges can be labelled
       if (me && !(settings.people || {})[me] && !registered) { registered = true; Promise.resolve().then(() => mergeSettings({ people: { [me]: emailName(myEmail) } })).catch(() => { registered = false; }); }
     },
@@ -1547,6 +1691,6 @@ function boot() {
 boot();
 })();
 </script>
-<script type="module" src="cloud.js?v=20261120a"></script>
+<script type="module" src="cloud.js?v=20261120b"></script>
 </body>
 </html>

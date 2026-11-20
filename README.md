@@ -15,14 +15,16 @@ Record each charge in a few taps and see what you spend, how much energy you use
 
 ## Features
 
-- **Quick logging**: car, charger type, date, odometer, kWh and cost, built for one-handed use at the charger
+- **Quick logging**: car, charger type, date, odometer, kWh and cost, built for one-handed use at the charger, with a live summary of the cost, price per kWh and distance since the last charge
+- **Typo checks**: a future date, an odometer that goes backwards or jumps, or more than a full battery gets a second look before saving
 - **Home, Public, Fast DC and Work** charger types, each with its own colour
 - **Several cars**: switch between cars or see them together
 - **Year view**: pick a year and the chart, totals and charge list follow
 - **Charts**: spend, energy, distance and efficiency per month as stacked bars, side by side, share of each month, horizontal bars or a running total, with the monthly average marked
 - **Month details**: tap a month for its full page, with comparisons to the month before and the same month last year, the split by charger type and car, the work claim and every charge
 - **Efficiency per car** (kWh/100 km) to see seasonal changes and spot missed entries
-- **Work claims**: monthly totals of work charging, ticked off once paid back
+- **Work claims**: monthly totals of work charging, ticked off once paid back, with the year's claimed and outstanding amounts
+- **Phone, tablet and desktop layouts**: two-by-two summary cards on phones, a wide layout with the chart and claims side by side on a computer
 - **Home electricity price history**: a new price from a chosen month onwards, with each charge priced by its own date
 - **Sync between devices**, and one list can be shared by several people with their own logins
 - **Works offline**: charges logged without signal upload when the connection returns
