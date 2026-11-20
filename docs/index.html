@@ -448,6 +448,17 @@ button{font:inherit;color:inherit}
 .m-tile.big .m-avg .d.flat{color:var(--feature-ink)}
 @media (min-width:521px){.m-tile.big{grid-row:span 2;justify-content:center}}
 .m-sec{background:var(--surface-2);border-radius:16px;padding:14px 14px 6px}
+/* space between the month page's cards (the sheet's own gap only spaces the header from the body) */
+#mBody{display:flex;flex-direction:column;gap:14px}
+@media (min-width:900px){
+  .month-sheet{max-width:820px;padding:24px 28px 28px;gap:20px}
+  #mBody{gap:18px}
+  .m-stats{gap:12px}
+  .m-tile{padding:16px 18px;gap:4px}
+  .m-tile b{font-size:22px}.m-tile.big b{font-size:30px}
+  .m-sec{padding:18px 20px 10px;gap:12px}
+  .m-row{padding:10px 2px}
+}
 .m-sec h3{font-size:12px}
 .m-sec .m-bar{margin-bottom:2px}
 .m-sec .claim{padding:4px 0 10px;border-bottom:0}
@@ -671,13 +682,13 @@ button{font:inherit;color:inherit}
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="config.js?v=20261120b"></script>
+<script src="config.js?v=20261120c"></script>
 
 <script>
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const APP_VERSION = "20261120b";   // keep in step with the ?v= on config.js and cloud.js
+const APP_VERSION = "20261120c";   // keep in step with the ?v= on config.js and cloud.js
 const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
 // last theme/colour, so the page doesn't flash before settings load
@@ -1212,7 +1223,7 @@ function renderMonth() {
   const tiles = ["cost", "kwh", "dist", "eff", "n"].map(key => {
     const K = MONTH_KINDS[key];
     const d1 = delta(key, m, p, monthName(prevK, { month: "short" })), d2 = delta(key, m, ly, monthName(lyK, { month: "short", year: "numeric" }));
-    const avgLine = key === "cost" && m.n && m.avg != null ? `<span class="m-avg">${money(m.avg, 3)}<small>/kWh average</small>${delta("avg", m, p, monthName(prevK, { month: "short" })) ? " · " + delta("avg", m, p, monthName(prevK, { month: "short" })) : ""}</span>` : "";
+    const avgLine = key === "cost" && m.n && m.avg != null ? `<span class="m-avg">${money(m.avg, 3)}<small>/kWh average</small>${delta("avg", m, p, monthName(prevK, { month: "short" })) ? "<br>" + delta("avg", m, p, monthName(prevK, { month: "short" })) : ""}</span>` : "";
     return `<div class="m-tile${key === "cost" ? " big" : ""}"><span class="lbl">${K.label}</span><b>${m.n || key === "n" ? K.fmt(val(m, key)) : "–"}</b>${d1 ? `<span class="dl">${d1}</span>` : ""}${d2 ? `<span class="dl">${d2}</span>` : ""}${avgLine}</div>`;
   }).join("");
   // split by charger type (by cost, or by energy when nothing has a cost)
@@ -1691,6 +1702,6 @@ function boot() {
 boot();
 })();
 </script>
-<script type="module" src="cloud.js?v=20261120b"></script>
+<script type="module" src="cloud.js?v=20261120c"></script>
 </body>
 </html>
