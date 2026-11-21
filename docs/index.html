@@ -397,8 +397,7 @@ button{font:inherit;color:inherit}
 .tile .val,.tile.feature .val{font-size:25px}
 .tile .sub{font-size:13px;line-height:1.35}
 @media (max-width:720px){.tile.feature,.tile:last-child{grid-column:auto}}
-@media (max-width:480px){.tile .val,.tile.feature .val{font-size:23px}.tile .val small{font-size:12.5px;margin-left:2px}}
-@media (max-width:380px){.tile{padding:12px 13px}.tile .val,.tile.feature .val{font-size:21px}.tile .val small{font-size:12px}.tile .sub{font-size:12.5px}}
+@media (max-width:480px){.tile .val,.tile.feature .val{font-size:23px}.tile .val small{font-size:12.5px;margin-left:2px}}@media (max-width:380px){.tile{padding:12px 13px}.tile .val,.tile.feature .val{font-size:21px}.tile .val small{font-size:12px}.tile .sub{font-size:12.5px}}
 @media (min-width:721px) and (max-width:1099px){.tile .val,.tile.feature .val{font-size:22px}.tile .val small{font-size:12px;margin-left:2px}.yearsum b{font-size:15.5px}.yearsum b small{font-size:11.5px}}
 .delta{font-weight:700;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 .delta.down{color:var(--charge)} .delta.up{color:var(--fast)}
@@ -475,6 +474,12 @@ button{font:inherit;color:inherit}
   .app:has(> #claimPanel[hidden]) > .chart-panel{grid-column:1/-1}
   #claimPanel #claimList{flex:1;min-height:0;overflow:auto;margin-right:-6px;padding-right:6px}
   .fab{right:max(20px,calc((100vw - 1240px) / 2 + 16px))}
+}
+/* the smallest phones (under 360px wide): keep figures and their units inside their boxes. Last, so it wins. */
+@media (max-width:359px){
+  .tile .val,.tile.feature .val{font-size:19px}.tile .val small{font-size:11px;margin-left:2px}
+  .yearsum b{font-size:14px}.yearsum b small{font-size:10.5px;margin-left:2px}
+  .claim-top div{padding:8px 9px}.claim-top b{font-size:13.5px}.claim-top span{font-size:10px}
 }
 </style>
 </head>
@@ -683,13 +688,13 @@ button{font:inherit;color:inherit}
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="config.js?v=20261120d"></script>
+<script src="config.js?v=20261121a"></script>
 
 <script>
 (() => {
 const $ = s => document.querySelector(s);
 const LOC = navigator.language || "en-GB";
-const APP_VERSION = "20261120d";   // keep in step with the ?v= on config.js and cloud.js
+const APP_VERSION = "20261121a";   // keep in step with the ?v= on config.js and cloud.js
 const DEFAULTS = { currency: "EUR", unit: "km", homePrice: null, homePrices: null, theme: "auto", accent: "teal", chartStyle: "bars" };
 // apply the last theme/colour straight away so the page doesn't flash before settings load
 // last theme/colour, so the page doesn't flash before settings load
@@ -1703,6 +1708,6 @@ function boot() {
 boot();
 })();
 </script>
-<script type="module" src="cloud.js?v=20261120d"></script>
+<script type="module" src="cloud.js?v=20261121a"></script>
 </body>
 </html>

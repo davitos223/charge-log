@@ -187,6 +187,8 @@ flowchart LR
 | `docs/manifest.webmanifest`, `docs/icons/` | Installable app details and icons |
 | `desktop/` | Windows wrapper (C#, WinForms and WebView2) that shows the live site in its own window |
 | `screenshots/` | Images for this README, taken from a demo copy with made-up data |
+| `tools/` | Automated tests and the screenshot script (Node, headless Edge or Chrome) |
+| `TESTING.md` | What the tests cover, security checks and the manual checklist |
 
 GitHub Pages serves the `docs/` folder from `main`.
 
@@ -206,6 +208,17 @@ then open `http://localhost:5173`. With sync configured, a local copy connects t
 </details>
 
 <details>
+<summary><b>Testing</b></summary>
+
+```
+node tools/test.mjs
+```
+
+Runs over 40 automated checks (figures, editing, backups, typo checks and layouts from 320 px phones to large screens) against a demo copy with made-up data, so it never touches real data. `node tools/screenshots.mjs` remakes the README pictures. See **[TESTING.md](TESTING.md)** for what's covered, the security checks and the manual checklist for real devices.
+
+</details>
+
+<details>
 <summary><b>Releasing a change</b></summary>
 
 GitHub Pages lets browsers cache each file for 10 minutes, so the page and its scripts are versioned together. On every release, change the version in all three places to the same value:
@@ -214,7 +227,7 @@ GitHub Pages lets browsers cache each file for 10 minutes, so the page and its s
 2. the `?v=` on the `config.js` and `cloud.js` script tags in `docs/index.html`
 3. `version` in `docs/cloud.js`
 
-Then push to `main`.
+Run `node tools/test.mjs` first, then push to `main`.
 
 </details>
 
