@@ -9,9 +9,32 @@ Record each charge in a few taps and see what you spend, how much energy you use
 
 [**Open the app**](https://davitos223.github.io/charge-log/) · [Windows app](https://github.com/davitos223/charge-log/releases/latest)
 
+<br>
+
+<img src="screenshots/desktop-dark.png" alt="Charge Log on a computer: monthly summary cards, a stacked bar chart of spending by charger type, and the work claims panel" width="100%">
+
+<br><br>
+
+<img src="screenshots/phone-home.png" width="23%" alt="Phone: summary cards">&nbsp;
+<img src="screenshots/phone-chart.png" width="23%" alt="Phone: monthly chart">&nbsp;
+<img src="screenshots/phone-log.png" width="23%" alt="Phone: logging a charge">&nbsp;
+<img src="screenshots/phone-month.png" width="23%" alt="Phone: month details">
+
+<sub>Screenshots use made-up demo data.</sub>
+
 </div>
 
 ---
+
+## Contents
+
+- [Features](#features)
+- [A tour of the app](#a-tour-of-the-app)
+- [Getting the app](#getting-the-app)
+- [Updates](#updates)
+- [Your data](#your-data)
+- [How it works](#how-it-works)
+- [For developers](#for-developers)
 
 ## Features
 
@@ -24,12 +47,78 @@ Record each charge in a few taps and see what you spend, how much energy you use
 - **Month details**: tap a month for its full page, with comparisons to the month before and the same month last year, the split by charger type and car, the work claim and every charge
 - **Efficiency per car** (kWh/100 km) to see seasonal changes and spot missed entries
 - **Work claims**: monthly totals of work charging, ticked off once paid back, with the year's claimed and outstanding amounts
-- **Phone, tablet and desktop layouts**: two-by-two summary cards on phones, a wide layout with the chart and claims side by side on a computer
 - **Home electricity price history**: a new price from a chosen month onwards, with each charge priced by its own date
 - **Sync between devices**, and one list can be shared by several people with their own logins
-- **Works offline**: charges logged without signal upload when the connection returns
-- **Light and dark themes** and a choice of colours
+- **Works offline**: charges logged without signal upload when the connection returns, and the app opens even when GitHub is down
+- **Phone, tablet and desktop layouts**, light and dark themes, and a choice of colours
 - **Backup** to a JSON file at any time
+
+## A tour of the app
+
+### At a glance
+
+The top of the app answers the everyday questions: what this month cost compared with last month, how much energy went in, the average price per kWh and how efficient the cars are. Pick one car or see both together.
+
+<p align="center">
+<img src="screenshots/phone-home.png" width="30%" alt="Phone: car switch and four summary cards">&nbsp;&nbsp;
+<img src="screenshots/phone-light.png" width="30%" alt="Phone: the same screen in the light theme">
+</p>
+
+### Charts that explain the month
+
+Each bar is split by where the charging happened. Hover over a month on a computer for a quick breakdown, or switch between spend, energy, distance and efficiency. Months with no charges show a small dash, so a quiet month never looks like missing data.
+
+<p align="center">
+<img src="screenshots/desktop-hover.png" width="100%" alt="Hovering over July shows a card with the spend split by Home, Public, Fast DC and Work">
+</p>
+
+<table>
+<tr>
+<td width="50%"><img src="screenshots/desktop-share.png" alt="Share style: each month's energy as 100%, split by charger type"><br><sub><b>Share</b> shows each month as 100%, here for energy</sub></td>
+<td width="50%"><img src="screenshots/desktop-efficiency.png" alt="Efficiency per car per month"><br><sub><b>Efficiency</b> per car, month by month</sub></td>
+</tr>
+</table>
+
+Other styles in Settings: side by side, horizontal bars and a running total that builds up over the year.
+
+### Month details
+
+Tap or click any month for its own page: what it cost and how that compares with the month before and the same month last year, the split by charger type and by car, the work claim, and every charge. The arrows step through the months.
+
+<table>
+<tr>
+<td width="68%"><img src="screenshots/desktop-month.png" alt="Month details on a computer"></td>
+<td width="32%"><img src="screenshots/phone-month.png" alt="Month details on a phone"></td>
+</tr>
+</table>
+
+### Logging a charge
+
+One sheet, built to be filled in at the charger. The last odometer reading and the usual charger type are filled in for you, home charges are priced from the home electricity rate for that date, and a summary shows the cost, price per kWh and the distance since the last charge before you save. Likely typos, such as an odometer lower than last time, get a second look.
+
+<p align="center">
+<img src="screenshots/phone-log.png" width="32%" alt="The Log a charge sheet with a live summary card">&nbsp;&nbsp;
+<img src="screenshots/phone-list.png" width="32%" alt="The charge list grouped by month">
+</p>
+
+### Work claims
+
+Charging paid for privately and claimed back from work is kept separately. Each month shows what is owed, a tap marks it as claimed, and if a charge is added to a month after claiming, the app points out the difference.
+
+<p align="center">
+<img src="screenshots/phone-claims.png" width="32%" alt="Work claims with claimed, to-claim and months totals and a progress bar">
+</p>
+
+### Settings and themes
+
+Currency, distance unit, a history of home electricity prices, theme, colour, chart style and car names.
+
+<table>
+<tr>
+<td width="50%"><img src="screenshots/desktop-settings.png" alt="Settings with home electricity prices, theme, colour and chart style"></td>
+<td width="50%"><img src="screenshots/desktop-light.png" alt="The dashboard in the light theme"></td>
+</tr>
+</table>
 
 ## Getting the app
 
@@ -57,6 +146,31 @@ Charges are stored in a private cloud database and only the logins that have acc
 
 Without sync set up, the app still works and keeps charges on the device.
 
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph Devices
+        P["Phone<br/>(installed web app)"]
+        W["Windows app<br/>(WebView2 window)"]
+        B["Any browser"]
+    end
+    subgraph GitHub
+        GP["GitHub Pages<br/>serves docs/"]
+    end
+    subgraph Firebase
+        AU["Authentication<br/>email + password"]
+        FS["Cloud Firestore<br/>charges + settings"]
+    end
+    GP -- "app files<br/>(cached for offline)" --> P & W & B
+    P & W & B -- "sign in" --> AU
+    P & W & B <-- "live sync<br/>(offline cache, queued writes)" --> FS
+```
+
+- **One app, everywhere.** The whole app is a single HTML file with no build step. GitHub Pages serves it, phones install it as a web app, and the Windows app is a small window around the same page, so one push updates every device.
+- **Offline first.** A service worker keeps a copy of the app, so it opens with no signal or when GitHub is down. Firestore keeps a local copy of the data, so charges can be logged anywhere and upload when the connection returns.
+- **Shared lists.** Each list belongs to one login. Other logins can be given access to it, and the database rules only let a login read and write lists it owns or has been given.
+
 ---
 
 ## For developers
@@ -69,9 +183,10 @@ Without sync set up, the app still works and keeps charges on the device.
 | `docs/index.html` | The whole app: markup, styles and logic in one file, no build step |
 | `docs/cloud.js` | Sign-in and sync (Firebase Authentication and Cloud Firestore with an offline cache) |
 | `docs/config.js` | Which Firebase project to connect to; set it to `null` to run without sync |
-| `docs/sw.js` | Service worker: offline support, always revalidating the app's own files |
+| `docs/sw.js` | Service worker: offline support; opens the saved copy if GitHub is down, slow or showing an error |
 | `docs/manifest.webmanifest`, `docs/icons/` | Installable app details and icons |
 | `desktop/` | Windows wrapper (C#, WinForms and WebView2) that shows the live site in its own window |
+| `screenshots/` | Images for this README, taken from a demo copy with made-up data |
 
 GitHub Pages serves the `docs/` folder from `main`.
 
@@ -110,7 +225,7 @@ Then push to `main`.
 2. Turn on **Authentication → Email/Password**. It's best to turn off public sign-up so that only accounts you add can sign in.
 3. Create a **Cloud Firestore** database in production mode.
 4. Write security rules so that each signed-in user can only read and write their own data, plus any list that has been explicitly shared with them.
-5. Put the web app's config in `docs/config.js`.
+5. Put the web app's config in `docs/config.js`, and restrict its API key to your site's address in the Google Cloud console.
 
 Each list lives under its owner's user ID. To share a list, the owner's settings name the other logins that may use it, and each of those logins points to the owner's list. Both are set in the Firebase console, never from the app.
 
