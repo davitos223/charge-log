@@ -95,7 +95,7 @@ try {
   ok(near(num(s.stats[0]), before.monthCost + 12.34, 2), "this month's spend went up by exactly 12.34", s.stats[0]);
   ok(near(num(s.stats[3]), e2.eff, 1), "efficiency recalculated", s.stats[3]);
 
-  const beforeEdit = e2, old = s.data.charges.find(c => c.date.startsWith("2026-01"));
+  await page.eval(`document.querySelector(".history-toggle").click()`); await page.sleep(200); const beforeEdit = e2, old = s.data.charges.find(c => c.date.startsWith("2026-01"));
   await page.eval(`const row = document.querySelector('#list .row[data-id="${old.id}"]'); row.click(); await new Promise(r => setTimeout(r, 100));
     const el = document.querySelector("#f-kwh"); el.value = "${old.kwh + 10}"; el.dispatchEvent(new Event("input", { bubbles: true }));
     document.querySelector("#chargeForm").requestSubmit(); await new Promise(r => setTimeout(r, 200));`);
