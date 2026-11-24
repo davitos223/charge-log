@@ -481,10 +481,88 @@ button{font:inherit;color:inherit}
   .yearsum b{font-size:14px}.yearsum b small{font-size:10.5px;margin-left:2px}
   .claim-top div{padding:8px 9px}.claim-top b{font-size:13.5px}.claim-top span{font-size:10px}
 }
+
+:root[data-theme="dark"] { --bg:#111416; --surface:#171b1e; --surface-2:#202528; --line:#343a3d; --muted:#abb5ba; }
+.history-toggle { margin:12px 0; }
+details.history-month { border-top:1px solid var(--line); }
+.history-month summary { cursor:pointer; padding:14px 4px; font-weight:600; }
+.history-month summary small { color:var(--muted); font-weight:400; margin-left:8px; }
+@media(min-width:900px) {
+  .app { --display:Inter,system-ui,sans-serif; }
+  .brand h1 { font-size:24px; }
+  .top { padding-bottom:12px; border-bottom:1px solid var(--line); }
+  .panel,.stats .tile,.yearsum,.yearsum div,.claim-top div,.leg { background:transparent; box-shadow:none; border-radius:0; }
+  .panel { border:0; border-top:1px solid var(--line); }
+  .stats { gap:0; padding:12px 0; border-block:1px solid var(--line); }
+  .stats .tile { border:0; color:var(--ink); }
+  .stats .tile + .tile { border-left:1px solid var(--line); }
+  .tile.feature::after { display:none; }
+  .tile.feature .lbl,.tile.feature .sub,.tile.feature .val small { color:var(--muted); }
+  .tile .lbl { text-transform:none; letter-spacing:.01em; }
+  .fab { box-shadow:none; border-radius:10px; }
+}
+:root, :root[data-theme] {
+  --feature-bg:var(--surface-2); --feature-ink:var(--ink); --feature-muted:var(--muted);
+}
+@media(prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) { --bg:#111416; --surface:#171b1e; --surface-2:#23282b; --line:#383f43; --muted:#abb5ba; --feature-bg:var(--surface-2); --feature-ink:var(--ink); --feature-muted:var(--muted); }
+}
+.brand h1 { font-size:clamp(25px,3vw,38px); line-height:1.15; letter-spacing:-.04em; }
+.panel-head h2 { font-size:clamp(20px,2vw,26px); }
+.tip { border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 24px #0003; }
+.carbar,.seg-mini { background:transparent; box-shadow:none; border:1px solid var(--line); }
+.carbar button[aria-pressed="true"],.seg-mini button[aria-pressed="true"] { background:var(--surface-2); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line); }
+.yearpick { background-color:transparent; border-color:var(--line); }
+.yearpick option { color:var(--ink); background:var(--surface); }
+#claimList { scrollbar-width:thin; scrollbar-color:var(--muted) transparent; scrollbar-gutter:stable; }
+.top .fab { position:static; flex:none; border-radius:9px; padding:10px 15px; color:var(--bg); background:var(--ink); box-shadow:none; font-size:15px; }
+@media(max-width:650px) {
+  .top { flex-wrap:wrap; }
+  .top .fab { order:1; width:100%; padding:12px; }
+}
+
+.side-nav {display:none}
+.widget-trigger,.side-nav button {background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+.widget-trigger {border:1px solid var(--line);border-radius:9px;padding:9px 12px;white-space:nowrap}
+#widgetPicker {margin:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(320px,90vw);box-shadow:0 12px 40px #0004}
+#widgetPicker::backdrop {background:#0005}
+#widgetPicker p {color:var(--muted)}
+#widgetPicker label {display:flex;align-items:center;gap:10px;padding:12px 0}
+#widgetPicker button {margin-top:12px}
+#extraWidgets {display:flex;gap:16px;flex-wrap:wrap}
+#extraWidgets[hidden],.side-nav [hidden] {display:none}
+#extraWidgets article {flex:1 1 220px;padding:16px;border:1px solid var(--line);border-radius:12px}
+#extraWidgets strong {display:block;font-size:24px;margin:6px 0}
+#extraWidgets small {color:var(--muted)}
+@media(min-width:1280px){
+.side-nav {position:fixed;inset:0 auto 0 0;width:180px;padding:26px 12px;display:flex;flex-direction:column;gap:6px;background:var(--surface);border-right:1px solid var(--line)}
+.side-nav strong {padding:0 12px 20px;font-size:20px}
+.side-nav a,.side-nav button {display:flex;align-items:center;gap:10px;padding:11px 12px;border:0;border-radius:8px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:600}
+.side-nav a[aria-current],.side-nav a:hover,.side-nav button:hover {background:var(--surface-2);color:var(--ink)}
+.side-nav button {margin-top:auto}
+#dashboard {margin-left:max(192px,calc((100vw - 1240px + 180px)/2));margin-right:12px}
+}
+@media(max-width:650px){.widget-trigger {order:2;width:100%}}
+@media(min-width:1280px) and (max-width:1399px){#dashboard{grid-template-columns:minmax(0,1fr) 330px}.claim-top div{padding-inline:5px}.claim-top b{font-size:16px}.yearsum div{padding-inline:8px}}
+#viewTools,#emptyClaims {display:none}
+body:is([data-view="claims"],[data-view="charges"]) #viewTools {display:block}
+body:is([data-view="claims"],[data-view="charges"]) :is(.chart-panel,#stats,#extraWidgets,.widget-trigger) {display:none}
+body[data-view="charges"] #claimPanel,body[data-view="claims"] #history {display:none}
+body[data-view="claims"]:has(#claimPanel[hidden]) #emptyClaims {display:block}
+body[data-view="claims"] #dashboard > #claimPanel {grid-column:1/-1;contain:none}
+body[data-view="claims"] #claimList {overflow:visible}
+@media(max-width:1279px){.side-nav{display:flex;justify-content:center;gap:6px;padding:8px}.side-nav strong,.side-nav button,.side-nav span{display:none}.side-nav a{padding:6px;color:var(--muted);text-decoration:none;font-size:14px}.side-nav a[aria-current]{color:var(--ink);border-bottom:2px solid currentColor}}
 </style>
 </head>
 <body>
-<div class="app">
+<nav class="side-nav" aria-label="Dashboard sections">
+<strong>Charge Log</strong>
+<a href="#dashboard" aria-current="location"><span aria-hidden="true">▦</span> Dashboard</a>
+<a href="#claims" id="claimLink"><span aria-hidden="true">✓</span> Work claims</a>
+<a href="#charges"><span aria-hidden="true">≡</span> Charge history</a>
+<button type="button" onclick="document.getElementById('settingsBtn').click()"><span aria-hidden="true">⚙</span> Settings</button>
+</nav>
+<div class="app" id="dashboard">
   <header class="top">
     <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="#3FCB82"/></svg></div>
     <div class="brand">
@@ -492,6 +570,11 @@ button{font:inherit;color:inherit}
       <p id="subline">Every charge, what it cost and how far it got you.</p>
     </div>
     <span class="sync" id="sync" hidden><i></i><span id="syncTxt"></span></span>
+<button type="button" class="widget-trigger" popovertarget="widgetPicker">+ Add widget</button>
+<button class="fab" id="addBtn" type="button" hidden>
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+  Log a charge
+</button>
     <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
     </button>
@@ -501,7 +584,7 @@ button{font:inherit;color:inherit}
 
   <div class="note" id="note" hidden></div>
 
-  <section class="stats" id="stats" aria-label="Summary"></section>
+  <div id="viewTools"><label>Year <select class="yearpick" id="viewYear"></select></label></div><p id="emptyClaims">No work claims for this selection.</p><section class="stats" id="stats" aria-label="Summary"></section>
 
   <section class="panel chart-panel" aria-labelledby="chartTitle">
     <div class="panel-head">
@@ -529,7 +612,7 @@ button{font:inherit;color:inherit}
     <div id="claimList"></div>
   </section>
 
-  <section class="panel" aria-labelledby="logTitle">
+  <section class="panel" id="history" aria-labelledby="logTitle">
     <div class="panel-head">
       <h2 id="logTitle">Charges</h2>
       <div class="chips" role="group" aria-label="Filter by type">
@@ -542,13 +625,12 @@ button{font:inherit;color:inherit}
     </div>
     <div id="list"></div>
   </section>
+<section id="extraWidgets" aria-label="Optional widgets" hidden></section>
 </div>
 
-<button class="fab" id="addBtn" type="button" hidden>
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
-  Log a charge
-</button>
 
+
+<div popover id="widgetPicker"><h2>Dashboard widgets</h2><p>Show on this device</p><label><input type="checkbox" value="energy"> Energy per charge</label><label><input type="checkbox" value="peak"> Busiest month</label><label><input type="checkbox" value="cost"> Average charge cost</label><label><input type="checkbox" value="home"> Home charging share</label><label><input type="checkbox" value="largest"> Largest charge</label><label><input type="checkbox" value="free"> Free charges</label><button class="btn ghost" popovertarget="widgetPicker" popovertargetaction="hide">Done</button></div>
 <!-- Charge form -->
 <div class="scrim" id="chargeScrim" hidden>
   <form class="sheet" id="chargeForm" novalidate aria-labelledby="formTitle">
@@ -806,7 +888,61 @@ const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^
 function sums(list) { let kwh = 0, cost = 0, kwhPriced = 0; for (const c of list) { kwh += c.kwh || 0; const k = costOf(c); if (isNum(k)) { cost += k; kwhPriced += c.kwh || 0; } } return { kwh, cost, avg: kwhPriced > 0 ? cost / kwhPriced : null, n: list.length }; }
 
 /* ---------- render ---------- */
-function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderClaims(); renderList(); if (monthKey && !$("#monthScrim").hidden) renderMonth(); }
+const widgetKey = "chargelog.widgets";
+const widgetInputs = [...document.querySelectorAll("#widgetPicker input")];
+try {
+  const saved = JSON.parse(localStorage.getItem(widgetKey) || "[]");
+  widgetInputs.forEach(input => input.checked = saved.includes(input.value));
+} catch {}
+widgetInputs.forEach(input => input.onchange = () => {
+  try { localStorage.setItem(widgetKey, JSON.stringify(widgetInputs.filter(i => i.checked).map(i => i.value))); } catch {}
+  renderWidgets();
+});
+function renderWidgets() {
+  const box = $("#extraWidgets");
+  $("#viewYear").innerHTML = $("#yearPick").innerHTML; $("#viewYear").value = yearSel;
+  const rows = vc().filter(inYear);
+  const counts = new Map();
+  for (const c of rows) counts.set(ym(c.date), (counts.get(ym(c.date)) || 0) + 1);
+  const peak = [...counts].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]))[0];
+  const metered = rows.filter(c => isNum(c.kwh));
+  const priced = rows.map(costOf).filter(isNum);
+  const totalEnergy = sums(metered).kwh;
+  const biggest = metered.reduce((best,c) => !best || c.kwh > best.kwh ? c : best,null);
+  const homeEnergy = sums(metered.filter(c => c.type === "home")).kwh;
+  const info = {
+    cost: ["Average charge cost", priced.length ? money(priced.reduce((sum,n) => sum+n,0)/priced.length) : "–", priced.length+" priced sessions"],
+    home: ["Home charging share", totalEnergy ? nf(100*homeEnergy/totalEnergy,1)+"%" : "–", nf(homeEnergy,1)+" kWh at home"],
+    largest: ["Largest charge", biggest ? nf(biggest.kwh,1)+" kWh" : "–", biggest ? biggest.date : "No energy logged"],
+    free: ["Free charges", String(priced.filter(n => n === 0).length), "Sessions with a recorded zero cost"],
+    energy: ["Energy per charge", metered.length ? nf(sums(metered).kwh / metered.length,1)+" kWh" : "–", metered.length+" charges with energy logged"],
+    peak: ["Busiest month", peak ? monthName(peak[0]) : "–", peak ? peak[1]+" charges" : "No charges"]
+  };
+  box.replaceChildren();
+  for (const input of widgetInputs.filter(i => i.checked)) {
+    const card = document.createElement("article");
+    info[input.value].forEach((text,i) => {
+      const el = document.createElement(["span","strong","small"][i]);
+      el.textContent = text;
+      card.append(el);
+    });
+    box.append(card);
+  }
+  box.hidden = !box.childElementCount;
+}
+function syncNav() {
+  const view = {"#claims":"claims","#charges":"charges"}[location.hash] || "dashboard";
+  document.body.dataset.view = view;
+  document.querySelector(".brand h1").textContent = {dashboard:"Charge Log",claims:"Work claims",charges:"Charge history"}[view];
+  document.querySelectorAll(".side-nav a").forEach(a => {
+    if (a.hash === (location.hash || "#dashboard")) a.setAttribute("aria-current","location");
+    else a.removeAttribute("aria-current");
+  });
+}
+$("#viewYear").onchange = e => { $("#yearPick").value = e.target.value; $("#yearPick").dispatchEvent(new Event("change")); };
+window.addEventListener("hashchange",() => { syncNav(); renderAll(); window.scrollTo(0,0); });
+syncNav();
+function renderAll() { renderCarBar(); renderYearPick(); renderHeader(); renderStats(); renderYearSum(); renderChart(); renderLegend(); renderClaims(); renderList(); renderWidgets(); if (monthKey && !$("#monthScrim").hidden) renderMonth(); }
 
 /* year view: the chart, its totals, the legend and the charge list all show one calendar year */
 const thisYear = () => todayISO().slice(0, 4);
@@ -1309,6 +1445,8 @@ function rowHTML(c, dist, ro) {
   </button>`;
 }
 
+
+let historyScope = "";
 function renderList() {
   const box = $("#list");
   if (noDb) { box.innerHTML = `<div class="empty"><h3>Sign in to see the log</h3><p>The charge log is saved with your claude.ai account. Open this page while signed in to view and add charges.</p></div>`; return; }
@@ -1321,15 +1459,41 @@ function renderList() {
     return;
   }
   const ds = distSince(); const rows = sorted().filter(c => inYear(c) && (filter === "all" || c.type === filter));
+  $("#logTitle").textContent = "Recent charges · " + yearSel;
   if (!rows.length) { box.innerHTML = `<div class="empty"><p>No ${filter === "all" ? "" : esc(TYPES[filter].label.toLowerCase()) + " "}charges in ${yearSel}${multiCar() && carSel !== "all" ? " for the " + esc(carName(carSel)) : ""}.</p></div>`; return; }
-  let html = "", curM = null;
-  const groups = {}; rows.forEach(c => (groups[ym(c.date || "")] ||= []).push(c));
-  for (const c of rows) {
-    const k = ym(c.date || "");
-    if (k !== curM) { curM = k; const g = sums(groups[k]); html += `<div class="month"><h3>${k ? esc(monthName(k)) : "No date"}</h3><span>${money(g.cost)} · ${nf(g.kwh, 0)} kWh</span></div>`; }
-    html += rowHTML(c, ds[c.id], !canWrite);
+  const scope = JSON.stringify([yearSel, carSel, filter]);
+  const sameScope = scope === historyScope;
+  historyScope = scope;
+  const previous = [...box.querySelectorAll("details")];
+  const openMonths = new Set(previous.filter(d => d.open).map(d => d.dataset.month));
+  const showHistory = document.body.dataset.view === "charges";
+  $("#logTitle").textContent = showHistory ? "Charge history · " + yearSel : "Recent charges · " + yearSel;
+  const row = c => rowHTML(c, ds[c.id], !canWrite);
+  if (showHistory) {
+    const groups = new Map();
+    for (const c of rows) {
+      const key = ym(c.date || "");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(c);
+    }
+    box.innerHTML = [...groups].map(([key, entries], i) => {
+      const opened = sameScope && previous.length ? openMonths.has(key) : i === 0;
+      return '<details class="history-month" data-month="' + esc(key) + '"' + (opened ? ' open' : '') + '><summary>' +
+        (key ? esc(monthName(key)) : 'No date') + '<small>' + entries.length + (entries.length === 1 ? ' charge' : ' charges') + ' · ' +
+        money(sums(entries).cost) + '</small></summary>' + entries.map(row).join("") + '</details>';
+    }).join("");
+  } else {
+    box.innerHTML = rows.slice(0, 5).map(row).join("");
   }
-  box.innerHTML = html;
+  if (rows.length > 5) {
+    const toggle = document.createElement("button");
+    toggle.className = "btn ghost history-toggle";
+    toggle.textContent = showHistory ? "Back to dashboard" : "View all " + rows.length + " charges";
+    toggle.onclick = () => {
+      location.hash = showHistory ? "dashboard" : "charges";
+    };
+    if (showHistory) box.prepend(toggle); else box.append(toggle);
+  }
 }
 
 /* ---------- note / toast ---------- */
@@ -1696,6 +1860,8 @@ $("#signOutBtn").addEventListener("click", () => { closeSheet("#setScrim"); wind
 
 function boot() {
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+
+  addEventListener("storage", e => { if (e.key === Store.KEY) localSync(); });
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
   addEventListener("storage", e => { if (e.key === Store.KEY) localSync(); });
   if (!window.CHARGE_LOG_FIREBASE) { useLocal(); return; }
