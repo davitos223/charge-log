@@ -547,7 +547,8 @@ details.history-month { border-top:1px solid var(--line); }
 #viewTools,#emptyClaims {display:none}
 body:is([data-view="claims"],[data-view="charges"]) #viewTools {display:block}
 body:is([data-view="claims"],[data-view="charges"]) :is(.chart-panel,#stats,#extraWidgets,.widget-trigger) {display:none}
-body[data-view="charges"] #claimPanel,body[data-view="claims"] #history {display:none}
+body:not([data-view="claims"]) #claimPanel,body:not([data-view="charges"]) #history {display:none}
+body[data-view="dashboard"] #dashboard > .chart-panel {grid-column:1/-1}
 body[data-view="claims"]:has(#claimPanel[hidden]) #emptyClaims {display:block}
 body[data-view="claims"] #dashboard > #claimPanel {grid-column:1/-1;contain:none}
 body[data-view="claims"] #claimList {overflow:visible}
