@@ -185,6 +185,14 @@ try {
     }
     return totals;`);
   ok(JSON.stringify(homeTotals) === "[8.96,4.93,0]", "saved home charges use the dated tariff unless an explicit total or zero is entered");
+  const unitPricing = await page.eval(`document.querySelector("#addBtn").click(); document.querySelector("#ty-fast").click();
+    const input = (selector,v) => {const el=document.querySelector(selector); el.value=v; el.dispatchEvent(new Event("input"));};
+    input("#f-kwh","10.33"); input("#unitPrice","0,65"); input("#f-loc","Unit price check");
+    const preview = document.querySelector("#preview").textContent.includes("6.71");
+    document.querySelector("#chargeForm").requestSubmit(); await new Promise(r=>setTimeout(r,150));
+    const charge=JSON.parse(localStorage.getItem("chargelog.v1")).charges.find(c=>c.location==="Unit price check");
+    return preview && charge?.cost === 6.71 && charge.unitPrice === 0.65;`);
+  ok(unitPricing,"Fast DC saves the entered unit price and calculates the receipt total");
   const paletteCheck = await page.eval(`document.querySelector("#settingsBtn").click();
     const read = () => getComputedStyle(document.querySelector(".chart-panel")).backgroundColor;
     const categories = () => ["home","public","fast","work"].map(c => getComputedStyle(document.querySelector(".bg-"+c) || document.documentElement).getPropertyValue("--"+c)).join("|");
