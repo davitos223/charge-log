@@ -157,7 +157,7 @@ try {
     const cost = document.querySelector("#f-cost");
     cost.value = "4.93"; cost.dispatchEvent(new Event("input"));
     const button = document.querySelector("#useHomeRate");
-    const mismatch = !button.hidden && button.textContent.includes("8.96") && document.querySelector("#preview").textContent.includes("0.094");
+    const mismatch = !button.hidden && button.textContent.includes("8.96") && document.querySelector("#preview").textContent.includes("Effective €0.094/kWh") && document.querySelector("#preview").textContent.includes("Home rate €0.170/kWh");
     button.click();
     const corrected = button.hidden && document.querySelector("#preview").textContent.includes("8.96");
     document.querySelector("#chargeScrim [data-close]").click();
