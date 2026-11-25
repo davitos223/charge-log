@@ -193,6 +193,16 @@ try {
     const charge=JSON.parse(localStorage.getItem("chargelog.v1")).charges.find(c=>c.location==="Unit price check");
     return preview && charge?.cost === 6.71 && charge.unitPrice === 0.65;`);
   ok(unitPricing,"Fast DC saves the entered unit price and calculates the receipt total");
+  const homeRate = await page.eval(`document.querySelector("#addBtn").click(); document.querySelector("#ty-home").click();
+    const input = (id,v) => {const el=document.getElementById(id); el.value=v; el.dispatchEvent(new Event("input"));};
+    input("f-date","2026-11-15"); input("f-kwh","10.33"); input("unitPrice","0.25"); input("f-loc","One-off home rate");
+    document.querySelector("#chargeForm").requestSubmit(); await new Promise(r=>setTimeout(r,150));
+    const c=JSON.parse(localStorage.getItem("chargelog.v1")).charges.find(c=>c.location==="One-off home rate");
+    document.querySelector("#addBtn").click(); document.querySelector("#ty-home").click(); input("f-date","2026-11-15");
+    const normal=document.querySelector("#unitPrice").placeholder;
+    document.querySelector("#chargeScrim [data-close]").click();
+    return c?.cost===2.58 && c.unitPrice===0.25 && normal==="0.17";`);
+  ok(homeRate,"one-off Home unit price saves and the next charge defaults to the normal tariff");
   const paletteCheck = await page.eval(`document.querySelector("#settingsBtn").click();
     const read = () => getComputedStyle(document.querySelector(".chart-panel")).backgroundColor;
     const categories = () => ["home","public","fast","work"].map(c => getComputedStyle(document.querySelector(".bg-"+c) || document.documentElement).getPropertyValue("--"+c)).join("|");

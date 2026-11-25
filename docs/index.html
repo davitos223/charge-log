@@ -1624,8 +1624,8 @@ function openForm(c) {
   F.odo.value = c && isNum(c.odo) ? c.odo : "";
   setOdoHint();
   F.kwh.value = c && isNum(c.kwh) ? c.kwh : "";
-  $("#overrideCost").checked = !!c && savedCost(c) !== null;
-  $("#unitPrice").value = c && c.type !== "home" && isNum(c.unitPrice) ? c.unitPrice : "";
+  $("#overrideCost").checked = !!c && savedCost(c) !== null && !isNum(c.unitPrice);
+  $("#unitPrice").value = c && isNum(c.unitPrice) ? c.unitPrice : "";
   F.cost.value = c ? (savedCost(c) ?? "") : "";
   F.loc.value = c ? (c.location || "") : "";
   F.notes.value = c ? (c.notes || "") : "";
@@ -1639,17 +1639,18 @@ function openForm(c) {
 
 function updatePreview() {
   const rateField = $("#unitPrice");
-  $("#unitPriceRow").hidden = formType() === "home";
+  const customRate = rateField.value.trim() !== "";
   const rate = parseDec(rateField.value);
   const energy = parseDec(F.kwh.value);
-  if (formType() !== "home" && rateField.value.trim()) {
+  if (customRate) {
     F.cost.value = isNum(rate) && rate >= 0 && isNum(energy) && energy > 0 ? (Math.round((energy * rate + Number.EPSILON) * 100) / 100).toFixed(2) : "";
   }
   const datedRate = formType() === "home" ? homePriceOn(F.date.value) : null;
   $("#overrideRow").hidden = !isNum(datedRate);
   F.cost.readOnly = isNum(datedRate) && !$("#overrideCost").checked;
-  if (F.cost.readOnly) F.cost.value = "";
-  $("#costLabel").textContent = F.cost.readOnly ? "Total at home rate" : "Total cost";
+  rateField.placeholder = isNum(datedRate) && !$("#overrideCost").checked ? String(datedRate) : "";
+  if (F.cost.readOnly && !customRate) F.cost.value = "";
+  $("#costLabel").textContent = F.cost.readOnly && !customRate ? "Total at home rate" : "Total cost";
   const kwh = parseDec(F.kwh.value), cost = parseDec(F.cost.value);
   const hp = datedRate, home = isNum(hp);
   const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * hp : null);
@@ -1674,13 +1675,14 @@ function setOdoHint() {
   F.odo.placeholder = last ? `last: ${nf(last.odo)}` : "";
 }
 $("#carPick").addEventListener("change", () => { setOdoHint(); updatePreview(); });
-$("#overrideCost").addEventListener("change", () => { updatePreview(); if ($("#overrideCost").checked) F.cost.focus(); });
+$("#overrideCost").addEventListener("change", () => { $("#unitPrice").value = ""; updatePreview(); if ($("#overrideCost").checked) F.cost.focus(); });
 $("#useHomeRate").addEventListener("click", () => {
   $("#overrideCost").checked = false;
+  $("#unitPrice").value = "";
   F.cost.value = "";
   updatePreview();
 });
-$("#unitPrice").addEventListener("input", () => { F.cost.value = ""; updatePreview(); });
+$("#unitPrice").addEventListener("input", () => { $("#overrideCost").checked = false; F.cost.value = ""; updatePreview(); });
 F.cost.addEventListener("input", () => { $("#unitPrice").value = ""; });
 Object.values(F).forEach(i => i.addEventListener("input", updatePreview));
 // changing the entry after a "check this" message asks again
@@ -1701,7 +1703,7 @@ $("#chargeForm").addEventListener("submit", async e => {
   const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
     by: editingId ? ((charges.find(x => x.id === editingId) || {}).by ?? null) : (me || null),
     odo, socStart: (charges.find(x => x.id === editingId) || {}).socStart ?? null, socEnd: (charges.find(x => x.id === editingId) || {}).socEnd ?? null, location: F.loc.value.trim(), notes: F.notes.value.trim(), updatedAt: Date.now() };
-  if (type !== "home" && $("#unitPrice").value.trim()) {
+  if ($("#unitPrice").value.trim()) {
     const rate = parseDec($("#unitPrice").value);
     if (!isNum(rate) || rate < 0 || !isNum(rate * kwh * 100)) return err("Enter a valid price per kWh, for example 0.65.");
     data.unitPrice = rate;
