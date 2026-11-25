@@ -610,6 +610,8 @@ body:not([data-view="dashboard"]) #overviewDate{display:none}
   .side-nav { gap:2px; padding-inline:4px; }
   .side-nav a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px clamp(5px, 2vw, 10px); font-size:15px; white-space:nowrap; }
 }
+body.awaiting-list #dashboard > :not(.top):not(#note),
+body.awaiting-list :is(.lifetime,.side-nav button,.widget-trigger) {display:none}
 </style>
 </head>
 <body>
@@ -1729,6 +1731,7 @@ $("#delBtn").addEventListener("click", async () => {
 
 /* ---------- settings ---------- */
 function openSettings() {
+  if (!canWrite) return;
   $("#s-cur").value = settings.currency; $("#s-unit").value = settings.unit;
   rateDraft = homeRates(); $("#s-home").value = ""; renderRates();
   const cv = window.Cloud ? (window.Cloud.version || "old") : null;
@@ -1914,7 +1917,8 @@ function onAuth(user) {
   }
   $("#gate").hidden = true; note("");
   me = user.uid || null; myEmail = user.email || "";
-  db = window.Cloud; canWrite = true; Store.onChange = null; loaded = false; setSync("connecting");
+  db = window.Cloud; canWrite = false; Store.onChange = null; loaded = false; charges = [];
+  document.body.classList.add("awaiting-list"); note("Connecting to your saved charge list…"); setSync("connecting");
   $("#acctBox").hidden = false; $("#acctEmail").textContent = "Signed in as " + user.email + (user.shared ? " · shared charge list" : "");
   $("#backupHint").textContent = "Charges sync to your account on every device. A backup file now and then is still a good idea.";
   applyWrite(); renderAll();
@@ -1927,7 +1931,13 @@ function onAuth(user) {
     }, () => toast("This device's charges couldn't be moved yet. They're still saved here."));
   }
   unsub = window.Cloud.subscribe(
-    (list, meta) => { charges = list; loaded = true; setSync(meta.hasPendingWrites ? "pending" : meta.fromCache ? "offline" : "synced"); renderAll(); },
+    (list, meta) => {
+      if (!loaded && !list.length && meta.fromCache) {
+        setSync("connecting"); note("Waiting for your saved charges. Connect to the internet to load this list.");
+        return;
+      }
+      if (!loaded) { document.body.classList.remove("awaiting-list"); note(""); }
+      charges = list; loaded = true; canWrite = true; applyWrite(); setSync(meta.hasPendingWrites ? "pending" : meta.fromCache ? "offline" : "synced"); renderAll(); },
     s => {
       rawSettings = s; settings = { ...DEFAULTS, ...s }; applyUnits(); renderAll();
       // the first time a login is seen, give it a name from its email so its charges can be labelled
@@ -1968,10 +1978,11 @@ function boot() {
   addEventListener("storage", e => { if (e.key === Store.KEY) localSync(); });
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
   addEventListener("storage", e => { if (e.key === Store.KEY) localSync(); });
-  if (!window.CHARGE_LOG_FIREBASE) { useLocal(); return; }
+  if (window.CHARGE_LOG_FIREBASE === null) { useLocal(); return; }
+  document.body.classList.add("awaiting-list"); note("Connecting to your saved charge list…");
   setSync("connecting"); renderAll();
   addEventListener("cloud-auth", e => onAuth(e.detail));
-  const fallback = () => { if (db) return; if (window.Cloud) { note("Still connecting to your charge list…"); return; } note("Sync couldn't load, so this shows charges saved on this device only."); setSync("offline"); useLocal(); };
+  const fallback = () => { if (db) return; if (window.Cloud) { note("Still connecting to your charge list…"); return; } note("Couldn’t connect to your saved charge list. Check your connection and reopen Charge Log. You can leave your backup as it is."); setSync("error"); };
   addEventListener("cloud-failed", fallback);
   cloudTimer = setTimeout(fallback, 15000);
 }

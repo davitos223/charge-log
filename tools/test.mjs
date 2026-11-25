@@ -221,6 +221,19 @@ try {
     const probs = [L.overflow && "page wider than screen", L.cut.length && "cut off: " + L.cut.join(", "), L.formOverlap && "form fields overlap", L.formOverflow && "form wider than sheet", L.monthOverflow && "month page wider than sheet", L.monthCut.length && "month page cut off: " + L.monthCut.join(", ")].filter(Boolean);
     ok(!probs.length, `${w}×${h}`, probs.join("; "));
   }
+  section("Cloud startup");
+  writeFileSync(join(demo.dir,"config.js"),"window.CHARGE_LOG_FIREBASE = {};");
+  writeFileSync(join(demo.dir,"cloud.js"),"window.dispatchEvent(new Event('cloud-failed'));");
+  const isolated = await serve(demo.dir);
+  try {
+    await page.goto(isolated.url);
+    ok(await page.eval(`return document.body.classList.contains("awaiting-list") && document.querySelector("#addBtn").hidden && document.querySelector("#syncTxt").textContent === "Sync stopped"`), "sync failure keeps the cloud account out of local-only mode");
+    const states = await page.eval(`window.Cloud = {subscribe(charges){window.sendCharges=charges;return ()=>{};}};
+      dispatchEvent(new CustomEvent("cloud-auth",{detail:{uid:"demo",email:"demo@example.test"}}));
+      sendCharges([],{fromCache:true}); const waiting=document.body.classList.contains("awaiting-list") && document.querySelector("#addBtn").hidden;
+      sendCharges([],{fromCache:false}); return [waiting,!document.body.classList.contains("awaiting-list") && !document.querySelector("#addBtn").hidden];`);
+    ok(states.every(Boolean), "initial empty cache waits for server confirmation before showing an empty account");
+  } finally { isolated.close(); }
   section("Errors");
   ok(page.errors.length === 0, "no JavaScript errors during the whole run", page.errors.slice(0, 3).join(" | "));
 } catch (err) {
