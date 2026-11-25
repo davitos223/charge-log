@@ -98,7 +98,7 @@ Tap or click any month for its own page: what it cost and how that compares with
 
 ### Logging a charge and browsing history
 
-One sheet, built to be filled in at the charger. The last odometer reading and the usual charger type are filled in for you, home charges are priced from the home electricity rate for that date, and a summary shows the cost, price per kWh and the distance since the last charge before you save. Open **Charge history** to browse by year, car or charger type. Expand a month to find an older entry, then select it to edit. If a Home entry’s total differs from the rate for its date, **Use home rate** previews the recalculated total. Select **Save changes** to apply it. Likely typos, such as an odometer lower than last time, get a second look.
+One sheet, built to be filled in at the charger. The last odometer reading and the usual charger type are filled in for you, home charges are priced from the home electricity rate for that date, and a summary shows the cost, price per kWh and the distance since the last charge before you save. Open **Charge history** to browse by year, car or charger type. Expand a month to find an older entry, then select it to edit. New Home charges use the tariff for their date automatically. Select **Enter a different total** for a receipt amount, including zero. If a Home entry’s total differs from the rate for its date, **Use home rate** previews the recalculated total. Select **Save changes** to apply it. Likely typos, such as an odometer lower than last time, get a second look.
 
 <p align="center">
 <img src="screenshots/phone-log.png" width="32%" alt="The Log a charge sheet with a live summary card">&nbsp;&nbsp;
@@ -115,9 +115,9 @@ Charging paid for privately and claimed back from work is kept separately. Each 
 
 ### Settings and themes
 
-In **Settings → Interface palette**, preview Twilight (the default), Ink, Cocoa, Burgundy, Limestone, Graphite, Dusty rose, Pearl, Atlantic, Midnight, Terracotta, Cranberry, Denim, Porcelain. Save to remember the choice in this browser. Each parent can choose their own palette on their device. For the plum dashboard shown above, choose **Dark** and **Twilight**.
+In **Settings → Interface palette**, preview Twilight (the default), Ink, Cocoa, Burgundy, Limestone, Graphite, Dusty rose, Pearl, Atlantic, Midnight, Terracotta, Cranberry, Denim, Porcelain, Obsidian, Abyss, Black cherry and Espresso. Save to remember the choice in this browser. Each parent can choose their own palette on their device. For the plum dashboard shown above, choose **Dark** and **Twilight**.
 
-The app also offers Light and Automatic themes. All 14 palettes keep the charging key consistent: Home is teal, Public lilac, Fast DC amber and Work green. Settings also contains currency, distance unit, home electricity rates, chart style and car names.
+The app also offers Light and Automatic themes. All 18 palettes keep the charging key consistent: Home is teal, Public lilac, Fast DC amber and Work green. Settings also contains currency, distance unit, home electricity rates, chart style and car names.
 
 <table>
 <tr>
@@ -221,7 +221,7 @@ then open `http://localhost:5173`. With sync configured, a local copy connects t
 node tools/test.mjs
 ```
 
-Runs 49 automated checks (including figures, editing, backups, navigation, palette previews and persistence, and layouts from 320 px phones to large screens) against a demo copy with made-up data, so it never touches real data. `node tools/screenshots.mjs` remakes the README pictures. See **[TESTING.md](TESTING.md)** for what's covered, the security checks and the manual checklist for real devices.
+Runs 50 automated checks (including figures, editing, backups, navigation, palette previews and persistence, and layouts from 320 px phones to large screens) against a demo copy with made-up data, so it never touches real data. `node tools/screenshots.mjs` remakes the README pictures. See **[TESTING.md](TESTING.md)** for what's covered, the security checks and the manual checklist for real devices.
 
 </details>
 

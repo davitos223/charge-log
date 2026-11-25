@@ -566,6 +566,10 @@ body[data-view="claims"] #claimList {overflow:visible}
 :root[data-palette="cranberry"]{--night:#4f2439;--panel-night:#623149;--day:#f8e2ea}
 :root[data-palette="denim"]{--night:#304456;--panel-night:#40596c;--day:#e1eaf0}
 :root[data-palette="porcelain"]{--night:#38444a;--panel-night:#46545a;--day:#f7fafb}
+:root[data-palette="obsidian"]{--night:#101113;--panel-night:#191b1e;--day:#e9eaeb}
+:root[data-palette="abyss"]{--night:#0a1321;--panel-night:#131f30;--day:#e4ebf4}
+:root[data-palette="blackCherry"]{--night:#190e16;--panel-night:#291b24;--day:#f2e6ed}
+:root[data-palette="espresso"]{--night:#18120f;--panel-night:#28201c;--day:#f2eae4}
 :root[data-palette="pearl"]{--night:#42424a;--panel-night:#504e58;--day:#f4f1f3}
 :root[data-palette] {color-scheme:light}
 :root[data-palette][data-theme="dark"] {color-scheme:dark}
@@ -700,8 +704,9 @@ body:not([data-view="dashboard"]) #overviewDate{display:none}
       <label class="fld"><span>Date</span><input type="date" id="f-date" required></label>
       <label class="fld"><span>Odometer</span><div class="unit"><input type="text" inputmode="numeric" id="f-odo" autocomplete="off"><em class="u-dist">km</em></div></label>
       <label class="fld"><span>Energy added</span><div class="unit"><input type="text" inputmode="decimal" id="f-kwh" autocomplete="off" placeholder="0.0"><em>kWh</em></div></label>
-      <label class="fld"><span>Total cost</span><div class="unit"><input type="text" inputmode="decimal" id="f-cost" autocomplete="off"><em class="u-cur">EUR</em></div></label>
+      <label class="fld"><span id="costLabel">Total cost</span><div class="unit"><input type="text" inputmode="decimal" id="f-cost" autocomplete="off"><em class="u-cur">EUR</em></div></label>
     </div>
+    <label id="overrideRow" hidden><input type="checkbox" id="overrideCost"> Enter a different total</label>
     <label class="fld"><span>Location <small style="font-weight:400">(optional)</small></span><input type="text" id="f-loc" list="locs" autocomplete="off" placeholder="e.g. Home, Ionity A1 services"></label>
     <datalist id="locs"></datalist>
     <label class="fld"><span>Notes <small style="font-weight:400">(optional)</small></span><textarea id="f-notes" rows="2" placeholder="Cold morning, preconditioned, etc."></textarea></label>
@@ -764,6 +769,10 @@ body:not([data-view="dashboard"]) #overviewDate{display:none}
 <label><input type="radio" name="palette" value="cranberry"><span style="background:#4f2439"></span><em>Cranberry</em></label>
 <label><input type="radio" name="palette" value="denim"><span style="background:#304456"></span><em>Denim</em></label>
 <label><input type="radio" name="palette" value="porcelain"><span style="background:#38444a"></span><em>Porcelain</em></label>
+<label><input type="radio" name="palette" value="obsidian"><span style="background:#101113"></span><em>Obsidian</em></label>
+<label><input type="radio" name="palette" value="abyss"><span style="background:#0a1321"></span><em>Abyss</em></label>
+<label><input type="radio" name="palette" value="blackCherry"><span style="background:#190e16"></span><em>Black cherry</em></label>
+<label><input type="radio" name="palette" value="espresso"><span style="background:#18120f"></span><em>Espresso</em></label>
 <label><input type="radio" name="palette" value="pearl"><span style="background:#42424a"></span><em>Pearl</em></label></div></div>
     <div class="fld"><span>Chart style</span>
       <div class="opts five" role="radiogroup" aria-label="Chart style">
@@ -1602,6 +1611,7 @@ function openForm(c) {
   F.odo.value = c && isNum(c.odo) ? c.odo : "";
   setOdoHint();
   F.kwh.value = c && isNum(c.kwh) ? c.kwh : "";
+  $("#overrideCost").checked = !!c && isNum(c.cost);
   F.cost.value = c && isNum(c.cost) ? c.cost : "";
   F.loc.value = c ? (c.location || "") : "";
   F.notes.value = c ? (c.notes || "") : "";
@@ -1614,14 +1624,19 @@ function openForm(c) {
 }
 
 function updatePreview() {
+  const datedRate = formType() === "home" ? homePriceOn(F.date.value) : null;
+  $("#overrideRow").hidden = !isNum(datedRate);
+  F.cost.readOnly = isNum(datedRate) && !$("#overrideCost").checked;
+  if (F.cost.readOnly) F.cost.value = "";
+  $("#costLabel").textContent = F.cost.readOnly ? "Total at home rate" : "Total cost";
   const kwh = parseDec(F.kwh.value), cost = parseDec(F.cost.value);
-  const hp = formType() === "home" ? homePriceOn(F.date.value) : null, home = isNum(hp);
+  const hp = datedRate, home = isNum(hp);
   const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * hp : null);
   const rateButton = $("#useHomeRate");
   const tariffTotal = home && isNum(kwh) && kwh > 0 ? Math.round(kwh * hp * 100) / 100 : null;
   rateButton.hidden = !isNum(tariffTotal) || !isNum(cost) || Math.round(cost * 100) === Math.round(tariffTotal * 100);
   if (!rateButton.hidden) rateButton.textContent = "Use home rate · " + money(hp, 3) + "/kWh · " + money(tariffTotal);
-  F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * hp, 2)}` : "0.00";
+  F.cost.placeholder = F.cost.readOnly && isNum(tariffTotal) ? nf(tariffTotal, 2) : "0.00";
   const ppk = isNum(effCost) && kwh > 0 ? effCost / kwh : null;
   // distance since this car's previous charge, from the odometer typed in
   const odo = parseInt0(F.odo.value), w = byOdo(charges.filter(x => carOf(x) === formCar() && x.id !== editingId));   // same reading as the odometer hint
@@ -1637,14 +1652,16 @@ function setOdoHint() {
   F.odo.placeholder = last ? `last: ${nf(last.odo)}` : "";
 }
 $("#carPick").addEventListener("change", () => { setOdoHint(); updatePreview(); });
+$("#overrideCost").addEventListener("change", () => { updatePreview(); if ($("#overrideCost").checked) F.cost.focus(); });
 $("#useHomeRate").addEventListener("click", () => {
+  $("#overrideCost").checked = false;
   F.cost.value = "";
   updatePreview();
 });
 Object.values(F).forEach(i => i.addEventListener("input", updatePreview));
 // changing the entry after a "check this" message asks again
 [F.date, F.odo, F.kwh].forEach(i => i.addEventListener("input", () => { if (!confirmSig) return; confirmSig = null; $("#formErr").hidden = true; $("#saveBtn").textContent = editingId ? "Save changes" : "Save charge"; }));
-document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener("change", updatePreview));
+document.querySelectorAll('input[name="type"]').forEach(r => r.addEventListener("change", () => { $("#overrideCost").checked = false; F.cost.value = ""; updatePreview(); }));
 
 $("#chargeForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -1654,6 +1671,7 @@ $("#chargeForm").addEventListener("submit", async e => {
   const odo = parseInt0(F.odo.value);
   if (!date) return err("Pick the date of the charge.");
   if (!isNum(kwh) || kwh <= 0) return err("Enter the energy added in kWh, for example 34.2.");
+  if (formType() === "home" && $("#overrideCost").checked && isNum(homePriceOn(date)) && cost === null) return err("Enter the total you paid, or untick Enter a different total to use the home rate.");
   if (Number.isNaN(cost) || (isNum(cost) && cost < 0)) return err("The cost should be a number, for example 8.55.");
   const type = formType();
   const data = { date, type, car: formCar(), kwh: Math.round(kwh * 1000) / 1000, cost: isNum(cost) ? Math.round(cost * 100) / 100 : null,
