@@ -606,6 +606,10 @@ body:not([data-view="dashboard"]) #overviewDate{display:none}
 @media(max-width:1279px){.lifetime{display:none}.side-nav{background:var(--bg)}}
 @media(max-width:650px){.chart-panel .panel-head{align-items:flex-start;flex-direction:column}}
 @media(max-width:1279px){body[data-view="dashboard"] #dashboard > .lifetime{display:block;margin-top:0}}
+@media (max-width:650px) {
+  .side-nav { gap:2px; padding-inline:4px; }
+  .side-nav a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px clamp(5px, 2vw, 10px); font-size:15px; white-space:nowrap; }
+}
 </style>
 </head>
 <body>
