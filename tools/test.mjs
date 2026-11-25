@@ -150,6 +150,21 @@ try {
     const keys = [...new Set([...Object.keys(A), ...Object.keys(B)])]; return keys.filter(k => JSON.stringify(A[k]) !== JSON.stringify(B[k]));`);
   ok(sv.length === 0, "saving Settings without changes changes nothing", sv.join(", "));
 
+  const paletteCheck = await page.eval(`document.querySelector("#settingsBtn").click();
+    const read = () => getComputedStyle(document.querySelector(".chart-panel")).backgroundColor;
+    const categories = () => ["home","public","fast","work"].map(c => getComputedStyle(document.querySelector(".bg-"+c) || document.documentElement).getPropertyValue("--"+c)).join("|");
+    const before = categories(), colours = new Set();
+    for (const input of document.querySelectorAll('[name="palette"]')) {
+      input.click(); colours.add(read());
+      if (categories() !== before) return false;
+    }
+    document.querySelector("#setScrim [data-close]").click();
+    return colours.size === 8 && document.documentElement.dataset.palette === "plum";`);
+  ok(paletteCheck, "eight distinct surface palettes preserve charging colours and cancel restores the original");
+  await page.eval(`document.querySelector("#settingsBtn").click(); document.querySelector('[value="cocoa"]').click(); document.querySelector("#setForm").requestSubmit();`);
+  await page.goto(URL0);
+  ok(await page.eval(`return document.documentElement.dataset.palette === "cocoa"`), "saved device palette survives reload");
+
   /* ---------- layouts ---------- */
   section("Layouts: nothing cut off or overlapping");
   const WIDTHS = [[320, 640], [360, 760], [375, 812], [390, 844], [414, 896], [430, 932], [768, 1024], [1024, 768], [1280, 800], [1440, 900], [1920, 1080]];
