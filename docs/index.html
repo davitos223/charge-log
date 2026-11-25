@@ -560,6 +560,12 @@ body[data-view="claims"] #claimList {overflow:visible}
 :root[data-palette="stone"]{--night:#423f39;--panel-night:#4d4943;--day:#f1eee7}
 :root[data-palette="graphite"]{--night:#303135;--panel-night:#3e4044;--day:#eeeef0}
 :root[data-palette="rose"]{--night:#503b42;--panel-night:#59464b;--day:#f4e9ec}
+:root[data-palette="atlantic"]{--night:#203b58;--panel-night:#2b4968;--day:#e1ecf7}
+:root[data-palette="midnight"]{--night:#232849;--panel-night:#303658;--day:#e7e9f7}
+:root[data-palette="terracotta"]{--night:#50302b;--panel-night:#664039;--day:#f6e5de}
+:root[data-palette="cranberry"]{--night:#4f2439;--panel-night:#623149;--day:#f8e2ea}
+:root[data-palette="denim"]{--night:#304456;--panel-night:#40596c;--day:#e1eaf0}
+:root[data-palette="porcelain"]{--night:#38444a;--panel-night:#46545a;--day:#f7fafb}
 :root[data-palette="pearl"]{--night:#42424a;--panel-night:#504e58;--day:#f4f1f3}
 :root[data-palette] {color-scheme:light}
 :root[data-palette][data-theme="dark"] {color-scheme:dark}
@@ -700,6 +706,7 @@ body:not([data-view="dashboard"]) #overviewDate{display:none}
     <datalist id="locs"></datalist>
     <label class="fld"><span>Notes <small style="font-weight:400">(optional)</small></span><textarea id="f-notes" rows="2" placeholder="Cold morning, preconditioned, etc."></textarea></label>
     <div class="preview" id="preview"></div>
+    <button class="btn ghost" id="useHomeRate" type="button" hidden></button>
     <p class="err" id="formErr" hidden></p>
     <div class="sheet-actions">
       <button type="button" class="btn ghost danger" id="delBtn" hidden>Delete</button>
@@ -751,6 +758,12 @@ body:not([data-view="dashboard"]) #overviewDate{display:none}
 <label><input type="radio" name="palette" value="stone"><span style="background:#423f39"></span><em>Limestone</em></label>
 <label><input type="radio" name="palette" value="graphite"><span style="background:#303135"></span><em>Graphite</em></label>
 <label><input type="radio" name="palette" value="rose"><span style="background:#503b42"></span><em>Dusty rose</em></label>
+<label><input type="radio" name="palette" value="atlantic"><span style="background:#203b58"></span><em>Atlantic</em></label>
+<label><input type="radio" name="palette" value="midnight"><span style="background:#232849"></span><em>Midnight</em></label>
+<label><input type="radio" name="palette" value="terracotta"><span style="background:#50302b"></span><em>Terracotta</em></label>
+<label><input type="radio" name="palette" value="cranberry"><span style="background:#4f2439"></span><em>Cranberry</em></label>
+<label><input type="radio" name="palette" value="denim"><span style="background:#304456"></span><em>Denim</em></label>
+<label><input type="radio" name="palette" value="porcelain"><span style="background:#38444a"></span><em>Porcelain</em></label>
 <label><input type="radio" name="palette" value="pearl"><span style="background:#42424a"></span><em>Pearl</em></label></div></div>
     <div class="fld"><span>Chart style</span>
       <div class="opts five" role="radiogroup" aria-label="Chart style">
@@ -1497,7 +1510,7 @@ function rowHTML(c, dist, ro) {
       ${meta ? `<span class="r3">${meta}</span>` : ""}
       ${c.notes ? `<span class="note-txt">${esc(c.notes)}</span>` : ""}
     </span>
-    <span class="amt"><b>${money(cost)}</b><small>${nf(c.kwh, 1)} kWh</small>${ppk != null ? `<small>${money(ppk, 3)}/kWh</small>` : ""}</span>
+    <span class="amt">${!isNum(c.cost) && isNum(cost) ? "<small>Estimated</small>" : ""}<b>${money(cost)}</b><small>${nf(c.kwh, 1)} kWh</small>${ppk != null ? `<small>${money(ppk, 3)}/kWh</small>` : ""}</span>
   </button>`;
 }
 
@@ -1602,6 +1615,10 @@ function updatePreview() {
   const kwh = parseDec(F.kwh.value), cost = parseDec(F.cost.value);
   const hp = formType() === "home" ? homePriceOn(F.date.value) : null, home = isNum(hp);
   const effCost = isNum(cost) ? cost : (home && isNum(kwh) ? kwh * hp : null);
+  const rateButton = $("#useHomeRate");
+  const tariffTotal = home && isNum(kwh) && kwh > 0 ? Math.round(kwh * hp * 100) / 100 : null;
+  rateButton.hidden = !isNum(tariffTotal) || !isNum(cost) || Math.round(cost * 100) === Math.round(tariffTotal * 100);
+  if (!rateButton.hidden) rateButton.textContent = "Use home rate · " + money(hp, 3) + "/kWh · " + money(tariffTotal);
   F.cost.placeholder = home && isNum(kwh) ? `≈ ${nf(kwh * hp, 2)}` : "0.00";
   const ppk = isNum(effCost) && kwh > 0 ? effCost / kwh : null;
   // distance since this car's previous charge, from the odometer typed in
@@ -1618,6 +1635,10 @@ function setOdoHint() {
   F.odo.placeholder = last ? `last: ${nf(last.odo)}` : "";
 }
 $("#carPick").addEventListener("change", () => { setOdoHint(); updatePreview(); });
+$("#useHomeRate").addEventListener("click", () => {
+  F.cost.value = "";
+  updatePreview();
+});
 Object.values(F).forEach(i => i.addEventListener("input", updatePreview));
 // changing the entry after a "check this" message asks again
 [F.date, F.odo, F.kwh].forEach(i => i.addEventListener("input", () => { if (!confirmSig) return; confirmSig = null; $("#formErr").hidden = true; $("#saveBtn").textContent = editingId ? "Save changes" : "Save charge"; }));

@@ -150,6 +150,19 @@ try {
     const keys = [...new Set([...Object.keys(A), ...Object.keys(B)])]; return keys.filter(k => JSON.stringify(A[k]) !== JSON.stringify(B[k]));`);
   ok(sv.length === 0, "saving Settings without changes changes nothing", sv.join(", "));
 
+  const rateCorrection = await page.eval(`document.querySelector("#addBtn").click();
+    document.querySelector("#ty-home").click();
+    document.querySelector("#f-date").value = "2026-11-15";
+    document.querySelector("#f-kwh").value = "52.7";
+    const cost = document.querySelector("#f-cost");
+    cost.value = "4.93"; cost.dispatchEvent(new Event("input"));
+    const button = document.querySelector("#useHomeRate");
+    const mismatch = !button.hidden && button.textContent.includes("8.96") && document.querySelector("#preview").textContent.includes("0.094");
+    button.click();
+    const corrected = button.hidden && document.querySelector("#preview").textContent.includes("8.96");
+    document.querySelector("#chargeScrim [data-close]").click();
+    return mismatch && corrected;`);
+  ok(rateCorrection, "52.7 kWh can be repriced from 4.93 to 8.96 using the dated home tariff");
   const paletteCheck = await page.eval(`document.querySelector("#settingsBtn").click();
     const read = () => getComputedStyle(document.querySelector(".chart-panel")).backgroundColor;
     const categories = () => ["home","public","fast","work"].map(c => getComputedStyle(document.querySelector(".bg-"+c) || document.documentElement).getPropertyValue("--"+c)).join("|");
@@ -159,8 +172,8 @@ try {
       if (categories() !== before) return false;
     }
     document.querySelector("#setScrim [data-close]").click();
-    return colours.size === 8 && document.documentElement.dataset.palette === "plum";`);
-  ok(paletteCheck, "eight distinct surface palettes preserve charging colours and cancel restores the original");
+    return colours.size === 14 && document.documentElement.dataset.palette === "plum";`);
+  ok(paletteCheck, "14 distinct surface palettes preserve charging colours and cancel restores the original");
   await page.eval(`document.querySelector("#settingsBtn").click(); document.querySelector('[value="cocoa"]').click(); document.querySelector("#setForm").requestSubmit();`);
   await page.goto(URL0);
   ok(await page.eval(`return document.documentElement.dataset.palette === "cocoa"`), "saved device palette survives reload");
