@@ -221,6 +221,18 @@ try {
     const probs = [L.overflow && "page wider than screen", L.cut.length && "cut off: " + L.cut.join(", "), L.formOverlap && "form fields overlap", L.formOverflow && "form wider than sheet", L.monthOverflow && "month page wider than sheet", L.monthCut.length && "month page cut off: " + L.monthCut.join(", ")].filter(Boolean);
     ok(!probs.length, `${w}×${h}`, probs.join("; "));
   }
+  await page.goto(URL0 + "?seed&legacy-cost");
+  const oldPrice = await page.eval(`const state = JSON.parse(localStorage.getItem("chargelog.v1"));
+    const c = state.charges.find(c => c.date.startsWith("2026"));
+    c.type = "fast"; c.cost = "4,93";
+    localStorage.setItem("chargelog.v1",JSON.stringify(state));
+    dispatchEvent(new StorageEvent("storage",{key:"chargelog.v1"}));
+    location.hash="charges"; await new Promise(r=>setTimeout(r,150));
+    const row = document.querySelector('#list .row[data-id="'+c.id+'"]');
+    const shown = row.querySelector(".amt b").textContent;
+    row.click(); document.querySelector("#ty-public").click();
+    return shown.includes("4.93") && document.querySelector("#f-cost").value === "4.93";`);
+  ok(oldPrice,"restored decimal-text price appears in history and survives a charger-type change");
   section("Cloud startup");
   writeFileSync(join(demo.dir,"config.js"),"window.CHARGE_LOG_FIREBASE = {};");
   writeFileSync(join(demo.dir,"cloud.js"),"window.dispatchEvent(new Event('cloud-failed'));");
