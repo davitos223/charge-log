@@ -11,7 +11,7 @@ Record each charge in a few taps and see what you spend, how much energy you use
 
 <br>
 
-<img src="screenshots/desktop-dark.png" alt="Charge Log on a computer: monthly summary cards, a stacked bar chart of spending by charger type, and the work claims panel" width="100%">
+<img src="screenshots/desktop-dark.png" alt="Charge Log on a computer: Overview with sidebar navigation, lifetime totals and the monthly charging chart" width="100%">
 
 <br><br>
 
@@ -57,7 +57,11 @@ Record each charge in a few taps and see what you spend, how much energy you use
 
 ### At a glance
 
-The top of the app answers the everyday questions: what this month cost compared with last month, how much energy went in, the average price per kWh and how efficient the cars are. Pick one car or see both together.
+Open **Dashboard** for the Overview. Choose one car or all cars to see this month’s spend and energy, average price and efficiency. The chart below follows the selected year. Lifetime totals sit in the sidebar on wide screens and beneath the dashboard on smaller screens.
+
+Use the sidebar to open **Work claims** or **Charge history**. On smaller screens, these links sit across the top. **Log a charge** is in the header.
+
+Select **+ Add widget** to show any of six optional cards for the selected car and year. Choose from Energy per charge, Busiest month, Average charge cost, Home charging share, Largest charge and Free charges. Home charging share measures energy in kWh. Free charges counts sessions with a recorded cost of zero. Widget choices are saved on this device.
 
 <p align="center">
 <img src="screenshots/phone-home.png" width="30%" alt="Phone: car switch and four summary cards">&nbsp;&nbsp;
@@ -92,9 +96,9 @@ Tap or click any month for its own page: what it cost and how that compares with
 </tr>
 </table>
 
-### Logging a charge
+### Logging a charge and browsing history
 
-One sheet, built to be filled in at the charger. The last odometer reading and the usual charger type are filled in for you, home charges are priced from the home electricity rate for that date, and a summary shows the cost, price per kWh and the distance since the last charge before you save. Likely typos, such as an odometer lower than last time, get a second look.
+One sheet, built to be filled in at the charger. The last odometer reading and the usual charger type are filled in for you, home charges are priced from the home electricity rate for that date, and a summary shows the cost, price per kWh and the distance since the last charge before you save. Open **Charge history** to browse by year, car or charger type. Expand a month to find an older entry, then select it to edit. Likely typos, such as an odometer lower than last time, get a second look.
 
 <p align="center">
 <img src="screenshots/phone-log.png" width="32%" alt="The Log a charge sheet with a live summary card">&nbsp;&nbsp;
@@ -111,7 +115,9 @@ Charging paid for privately and claimed back from work is kept separately. Each 
 
 ### Settings and themes
 
-Currency, distance unit, a history of home electricity prices, theme, colour, chart style and car names.
+In **Settings → Interface palette**, preview Twilight (the default), Ink, Cocoa, Burgundy, Limestone, Graphite, Dusty rose or Pearl. Save to remember the choice in this browser. Each parent can choose their own palette on their device. For the plum dashboard shown above, choose **Dark** and **Twilight**.
+
+The app also offers Light and Automatic themes. All eight palettes keep the charging key consistent: Home is teal, Public lilac, Fast DC amber and Work green. Settings also contains currency, distance unit, home electricity rates, chart style and car names.
 
 <table>
 <tr>
@@ -134,7 +140,7 @@ It then opens full screen like a normal app.
 
 ### Windows
 
-Download **`ChargeLog.exe`** from the [latest release](https://github.com/davitos223/charge-log/releases/latest) and run it. It needs nothing else installed. It opens the same app in its own window, so you only need to download it once.
+Download **`ChargeLog.exe`** from the [latest release](https://github.com/davitos223/charge-log/releases/latest) and run it. It uses the Microsoft Edge WebView2 Runtime. It opens the same app in its own window, so you only need to download it once.
 
 ## Updates
 
@@ -142,7 +148,7 @@ The app updates itself. Every change pushed to this repository goes live within 
 
 ## Your data
 
-Charges are stored in a private cloud database and only the logins that have access to a list can read it. Nothing is stored in this repository. **Settings → Save backup file** exports everything as a JSON file you can keep or load back in.
+Charges are stored in a private cloud database and only the logins that have access to a list can read it. Nothing is stored in this repository. **Settings → Save backup file** exports charges and list settings as a JSON file you can keep or load back in.
 
 Without sync set up, the app still works and keeps charges on the device.
 
@@ -167,7 +173,7 @@ flowchart LR
     P & W & B <-- "live sync<br/>(offline cache, queued writes)" --> FS
 ```
 
-- **One app, everywhere.** The whole app is a single HTML file with no build step. GitHub Pages serves it, phones install it as a web app, and the Windows app is a small window around the same page, so one push updates every device.
+- **One app, everywhere.** The interface and charge calculations live in a single HTML file with no build step. Separate scripts handle Firebase configuration and sync. GitHub Pages serves it, phones install it as a web app, and the Windows app is a small window around the same page, so one push updates every device.
 - **Offline first.** A service worker keeps a copy of the app, so it opens with no signal or when GitHub is down. Firestore keeps a local copy of the data, so charges can be logged anywhere and upload when the connection returns.
 - **Shared lists.** Each list belongs to one login. Other logins can be given access to it, and the database rules only let a login read and write lists it owns or has been given.
 
@@ -181,6 +187,7 @@ flowchart LR
 | Path | What it is |
 |---|---|
 | `docs/index.html` | The whole app: markup, styles and logic in one file, no build step |
+| `docs/beta/index.html` | Standalone preview with invented charges and browser-local storage |
 | `docs/cloud.js` | Sign-in and sync (Firebase Authentication and Cloud Firestore with an offline cache) |
 | `docs/config.js` | Which Firebase project to connect to; set it to `null` to run without sync |
 | `docs/sw.js` | Service worker: offline support; opens the saved copy if GitHub is down, slow or showing an error |
@@ -214,7 +221,7 @@ then open `http://localhost:5173`. With sync configured, a local copy connects t
 node tools/test.mjs
 ```
 
-Runs over 40 automated checks (figures, editing, backups, typo checks and layouts from 320 px phones to large screens) against a demo copy with made-up data, so it never touches real data. `node tools/screenshots.mjs` remakes the README pictures. See **[TESTING.md](TESTING.md)** for what's covered, the security checks and the manual checklist for real devices.
+Runs 48 automated checks (including figures, editing, backups, navigation, palette previews and persistence, and layouts from 320 px phones to large screens) against a demo copy with made-up data, so it never touches real data. `node tools/screenshots.mjs` remakes the README pictures. See **[TESTING.md](TESTING.md)** for what's covered, the security checks and the manual checklist for real devices.
 
 </details>
 
